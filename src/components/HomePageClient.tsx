@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -70,7 +71,7 @@ export function HomePageClient() {
           setIsLocationLoading(false);
         },
         (error) => {
-          console.error("Error getting location:", error);
+          console.error("Error getting location details:", error); // Updated console.error
           if (error.code === error.PERMISSION_DENIED) {
             toast({
               title: "Location Permission Denied",
