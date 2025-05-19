@@ -11,8 +11,9 @@ export default {
   theme: {
   	extend: {
       fontFamily: {
-        sans: ['var(--font-roboto)', ...defaultTheme.fontFamily.sans], // Updated to Roboto
+        sans: ['var(--font-roboto)', ...defaultTheme.fontFamily.sans], 
         mono: ['var(--font-geist-mono)', ...defaultTheme.fontFamily.mono],
+        'eb-garamond': ['var(--font-eb-garamond)', ...defaultTheme.fontFamily.serif], // Added EB Garamond
       },
   		colors: {
   			background: 'hsl(var(--background))',

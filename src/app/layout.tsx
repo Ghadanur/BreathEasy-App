@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Roboto, Geist_Mono } from 'next/font/google';
+import { Roboto, Geist_Mono, EB_Garamond } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,14 @@ const roboto = Roboto({
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+});
+
+const ebGaramond = EB_Garamond({
+  weight: ['400', '500', '700', '800'], // Added more weights for flexibility
+  style: ['normal', 'italic'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-eb-garamond',
 });
 
 export const metadata: Metadata = {
@@ -33,12 +41,13 @@ export default function RootLayout({
         className={cn(
           roboto.variable, 
           geistMono.variable, 
-          "antialiased font-sans" // font-sans will now use Roboto via Tailwind config
+          ebGaramond.variable, // Added EB Garamond variable
+          "antialiased font-sans" 
         )}
       >
         <div className={cn(
           "min-h-screen flex flex-col",
-          "bg-gradient-to-br from-[hsl(180,30%,92%)] to-[hsl(95,25%,95%)]" // Even further lightened and desaturated gradient
+          "bg-gradient-to-br from-[hsl(180,30%,92%)] to-[hsl(95,25%,95%)]"
         )}>
           {children}
         </div>

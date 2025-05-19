@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { AirQualityReading, LocationData } from '@/types';
-import { fetchLatestAirQuality, fetchHistoricalAirQuality } from '@/lib/airQualityService'; // Updated import
+import { fetchLatestAirQuality, fetchHistoricalAirQuality } from '@/lib/airQualityService';
 import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
@@ -108,7 +108,7 @@ export function HomePageClient() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary via-blue-400 to-accent bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary via-blue-400 to-accent bg-clip-text text-transparent font-eb-garamond">
           Air Quality Dashboard
         </h1>
         <Button onClick={loadData} variant="outline" size="sm" disabled={isLoading}>
