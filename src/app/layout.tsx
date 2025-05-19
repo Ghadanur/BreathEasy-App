@@ -35,7 +35,7 @@ export default function RootLayout({
       >
         <div className={cn(
           "min-h-screen flex flex-col",
-          "bg-gradient-to-br from-[hsl(180,70%,60%)] to-[hsl(95,65%,70%)]" // Added gradient here
+          "bg-gradient-to-br from-[hsl(180,50%,75%)] to-[hsl(95,45%,80%)]" // Adjusted gradient to be milder
         )}>
           {children}
         </div>
