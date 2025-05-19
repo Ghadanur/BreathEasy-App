@@ -33,7 +33,10 @@ export default function RootLayout({
           "antialiased font-sans"
         )}
       >
-        <div className="min-h-screen flex flex-col">
+        <div className={cn(
+          "min-h-screen flex flex-col",
+          "bg-gradient-to-br from-[hsl(180,70%,60%)] to-[hsl(95,65%,70%)]" // Added gradient here
+        )}>
           {children}
         </div>
         <Toaster />
