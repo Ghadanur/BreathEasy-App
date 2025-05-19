@@ -9,7 +9,7 @@ import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LocationDisplay } from '@/components/LocationDisplay';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Gauge, CloudDrizzle, CloudRain, CloudLightning } from 'lucide-react';
+import { Thermometer, Droplets, Wind, CloudDrizzle, CloudRain, CloudLightning } from 'lucide-react'; // Changed Gauge to Wind
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -58,7 +58,6 @@ export function HomePageClient() {
   }, [loadData]);
 
   useEffect(() => {
-    // Attempt to get geolocation only if not already set or explicitly requested
     if (!location && navigator.geolocation) {
       setIsLocationLoading(true);
       navigator.geolocation.getCurrentPosition(
@@ -66,7 +65,6 @@ export function HomePageClient() {
           setLocation({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-            // address: "To be fetched via reverse geocoding" 
           });
           setIsLocationLoading(false);
         },
@@ -78,7 +76,6 @@ export function HomePageClient() {
               variant: "default",
             });
           } else {
-            // Log other errors to the console
             console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
             toast({
               title: "Location Error",
@@ -97,7 +94,7 @@ export function HomePageClient() {
       });
       setIsLocationLoading(false);
     }
-  }, [toast, location]); // Added location to dependency array
+  }, [toast, location]);
 
   if (isLoading && !latestReading && historicalData.length === 0) { 
     return (
@@ -119,7 +116,6 @@ export function HomePageClient() {
         </Button>
       </div>
 
-      {/* Current Readings Section */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
         {latestReading ? (
           <>
@@ -140,20 +136,21 @@ export function HomePageClient() {
               description="Relative humidity level"
             />
             <AirQualityCard 
-              title="AQI" 
-              value={latestReading.aqi.toFixed(0)} 
-              icon={Gauge}
-              color={latestReading.aqi > 100 ? "text-red-500" : latestReading.aqi > 50 ? "text-yellow-500" : "text-green-500"}
-              description="Air Quality Index (from Sensor)"
+              title="CO2" 
+              value={latestReading.co2.toFixed(0)}
+              unit="ppm"
+              icon={Wind} // Changed from Gauge
+              color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
+              description="Carbon Dioxide Level"
             />
             <LocationDisplay location={location} isLoading={isLocationLoading} />
             <AirQualityCard 
-              title="PM1.0" 
-              value={latestReading.pm1.toFixed(1)} 
+              title="PM10 (Alt.)" 
+              value={latestReading.pm10_sensor_alternate.toFixed(1)} 
               unit="μg/m³" 
               icon={CloudDrizzle}
               color="text-purple-500"
-              description="Particulate Matter <1μm"
+              description="Particulate Matter <10μm (Alt. Sensor)"
             />
             <AirQualityCard 
               title="PM2.5" 
@@ -169,7 +166,7 @@ export function HomePageClient() {
               unit="μg/m³" 
               icon={CloudLightning}
               color="text-gray-500"
-              description="Particulate Matter <10μm"
+              description="Particulate Matter <10μm (Main Sensor)"
             />
           </>
         ) : (
@@ -177,13 +174,12 @@ export function HomePageClient() {
         )}
       </section>
       
-      {/* Historical Data Section */}
       <section className="space-y-6">
         <h2 className="text-2xl font-semibold">Historical Trends</h2>
         {historicalData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <HistoricalDataChart data={historicalData} dataKey="temperature" title="Temperature Trend (°C)" color="hsl(var(--chart-1))" unit="°C" />
-            <HistoricalDataChart data={historicalData} dataKey="aqi" title="AQI Trend" chartType="bar" color="hsl(var(--chart-2))" />
+            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO2 Trend (ppm)" chartType="bar" color="hsl(var(--chart-2))" unit="ppm"/>
             <HistoricalDataChart data={historicalData} dataKey="pm2_5" title="PM2.5 Trend (μg/m³)" color="hsl(var(--chart-3))" unit="μg/m³"/>
             <HistoricalDataChart data={historicalData} dataKey="humidity" title="Humidity Trend (%)" chartType="bar" color="hsl(var(--chart-4))" unit="%"/>
           </div>
@@ -192,7 +188,6 @@ export function HomePageClient() {
         )}
       </section>
 
-      {/* Personalized Tips Section */}
       <section>
         <PersonalizedTips latestReading={latestReading} location={location} />
       </section>

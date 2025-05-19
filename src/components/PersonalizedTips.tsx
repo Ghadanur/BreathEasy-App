@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -50,9 +51,9 @@ export function PersonalizedTips({ latestReading, location: initialLocation }: P
         location: userLocationInput || (initialLocation ? `${initialLocation.latitude}, ${initialLocation.longitude}`: "Unknown Location"),
         temperature: latestReading.temperature,
         humidity: latestReading.humidity,
-        airQualityIndex: latestReading.aqi,
+        co2Level: latestReading.co2, // Changed from airQualityIndex: latestReading.aqi
         particulateMatterPM2_5: latestReading.pm2_5,
-        particulateMatterPM10: latestReading.pm10,
+        particulateMatterPM10: latestReading.pm10, // This uses the main PM10 reading
       };
       
       const result: PersonalizedAirQualityTipsOutput = await getPersonalizedAirQualityTips(inputData);

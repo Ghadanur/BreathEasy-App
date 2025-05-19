@@ -3,8 +3,8 @@ export interface AirQualityReading {
   timestamp: string; // ISO string date
   temperature: number; // Celsius
   humidity: number; // Percentage
-  aqi: number; // Air Quality Index
-  pm1: number; // PM1.0 μg/m³
+  co2: number; // CO2 level in ppm (formerly aqi)
+  pm10_sensor_alternate: number; // PM10 μg/m³ from an alternate sensor/field (formerly pm1)
   pm2_5: number; // PM2.5 μg/m³
   pm10: number; // PM10 μg/m³
 }

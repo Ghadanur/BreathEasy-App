@@ -8,24 +8,23 @@ const THINGSPEAK_READ_API_KEY = process.env.NEXT_PUBLIC_THINGSPEAK_READ_API_KEY;
 
 const BASE_URL = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL_ID}`;
 
-// Assumed ThingSpeak Field Mapping:
+// ThingSpeak Field Mapping:
 // field1: Temperature (°C)
 // field2: Humidity (%)
-// field3: AQI (Air Quality Index)
-// field4: PM1.0 (μg/m³)
+// field3: CO2 (ppm)
+// field4: PM10 (μg/m³) - Alternate Sensor
 // field5: PM2.5 (μg/m³)
-// field6: PM10 (μg/m³)
+// field6: PM10 (μg/m³) - Main Sensor
 
 interface ThingSpeakFeed {
   created_at: string;
   entry_id: number;
   field1: string | null; // Temperature
   field2: string | null; // Humidity
-  field3: string | null; // AQI
-  field4: string | null; // PM1.0
+  field3: string | null; // CO2
+  field4: string | null; // PM10 (Alternate Sensor)
   field5: string | null; // PM2.5
-  field6: string | null; // PM10
-  // Add more fields if your channel has them
+  field6: string | null; // PM10 (Main Sensor)
 }
 
 interface ThingSpeakResponse {
@@ -53,8 +52,8 @@ function parseFeedToAirQualityReading(feed: ThingSpeakFeed): AirQualityReading {
     timestamp: formatISO(new Date(feed.created_at)),
     temperature: parseFloat(feed.field1 || '0'),
     humidity: parseFloat(feed.field2 || '0'),
-    aqi: parseFloat(feed.field3 || '0'),
-    pm1: parseFloat(feed.field4 || '0'),
+    co2: parseFloat(feed.field3 || '0'), // Changed from aqi
+    pm10_sensor_alternate: parseFloat(feed.field4 || '0'), // Changed from pm1
     pm2_5: parseFloat(feed.field5 || '0'),
     pm10: parseFloat(feed.field6 || '0'),
   };
@@ -63,7 +62,7 @@ function parseFeedToAirQualityReading(feed: ThingSpeakFeed): AirQualityReading {
 export async function fetchLatestAirQuality(): Promise<AirQualityReading | null> {
   if (!THINGSPEAK_CHANNEL_ID || !THINGSPEAK_READ_API_KEY) {
     console.error("ThingSpeak environment variables NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID or NEXT_PUBLIC_THINGSPEAK_READ_API_KEY are not configured in your .env file. Please set them to fetch data.");
-    return null; // Return null if config is missing, UI will handle this
+    return null; 
   }
 
   const url = `${BASE_URL}/feeds.json?api_key=${THINGSPEAK_READ_API_KEY}&results=1`;
@@ -90,7 +89,7 @@ export async function fetchLatestAirQuality(): Promise<AirQualityReading | null>
 export async function fetchHistoricalAirQuality(results: number = 96): Promise<AirQualityReading[]> {
   if (!THINGSPEAK_CHANNEL_ID || !THINGSPEAK_READ_API_KEY) {
     console.error("ThingSpeak environment variables NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID or NEXT_PUBLIC_THINGSPEAK_READ_API_KEY are not configured for historical data. Please set them in your .env file.");
-    return []; // Return empty array if config is missing
+    return []; 
   }
 
   const url = `${BASE_URL}/feeds.json?api_key=${THINGSPEAK_READ_API_KEY}&results=${results}`;
