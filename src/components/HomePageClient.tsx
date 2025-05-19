@@ -71,7 +71,7 @@ export function HomePageClient() {
           setIsLocationLoading(false);
         },
         (error) => {
-          console.error("Error getting location details:", error); // Updated console.error
+          console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
           if (error.code === error.PERMISSION_DENIED) {
             toast({
               title: "Location Permission Denied",
