@@ -1,7 +1,7 @@
 import type { AirQualityReading } from '@/types';
 import { subDays, formatISO } from 'date-fns';
 
-// Mock function to simulate fetching latest air quality data from ThingSpeak
+// Mock function to simulate fetching latest air quality data
 export async function fetchLatestAirQuality(): Promise<AirQualityReading> {
   return new Promise(resolve => {
     setTimeout(() => {
