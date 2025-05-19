@@ -1,9 +1,10 @@
+
 import type { AirQualityReading } from '@/types';
 import { formatISO } from 'date-fns';
 
-// Environment variables (ensure these are set in your .env file)
-const THINGSPEAK_CHANNEL_ID = process.env.THINGSPEAK_CHANNEL_ID;
-const THINGSPEAK_READ_API_KEY = process.env.THINGSPEAK_READ_API_KEY;
+// Environment variables (ensure these are set in your .env.local file with NEXT_PUBLIC_ prefix)
+const THINGSPEAK_CHANNEL_ID = process.env.NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID;
+const THINGSPEAK_READ_API_KEY = process.env.NEXT_PUBLIC_THINGSPEAK_READ_API_KEY;
 
 const BASE_URL = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL_ID}`;
 
@@ -61,18 +62,8 @@ function parseFeedToAirQualityReading(feed: ThingSpeakFeed): AirQualityReading {
 
 export async function fetchLatestAirQuality(): Promise<AirQualityReading | null> {
   if (!THINGSPEAK_CHANNEL_ID || !THINGSPEAK_READ_API_KEY) {
-    console.error("ThingSpeak Channel ID or API Key is not configured.");
-    // Fallback to a default/mock reading or throw error
-    return {
-        id: 'fallback-latest',
-        timestamp: formatISO(new Date()),
-        temperature: 0,
-        humidity: 0,
-        aqi: 0,
-        pm1: 0,
-        pm2_5: 0,
-        pm10: 0,
-      };
+    console.error("ThingSpeak environment variables NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID or NEXT_PUBLIC_THINGSPEAK_READ_API_KEY are not configured in your .env file. Please set them to fetch data.");
+    return null; // Return null if config is missing, UI will handle this
   }
 
   const url = `${BASE_URL}/feeds.json?api_key=${THINGSPEAK_READ_API_KEY}&results=1`;
@@ -97,10 +88,9 @@ export async function fetchLatestAirQuality(): Promise<AirQualityReading | null>
 }
 
 export async function fetchHistoricalAirQuality(results: number = 96): Promise<AirQualityReading[]> {
-  // Fetches a specified number of recent entries (e.g., 96 entries for ~4 days of hourly data)
   if (!THINGSPEAK_CHANNEL_ID || !THINGSPEAK_READ_API_KEY) {
-    console.error("ThingSpeak Channel ID or API Key is not configured for historical data.");
-    return [];
+    console.error("ThingSpeak environment variables NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID or NEXT_PUBLIC_THINGSPEAK_READ_API_KEY are not configured for historical data. Please set them in your .env file.");
+    return []; // Return empty array if config is missing
   }
 
   const url = `${BASE_URL}/feeds.json?api_key=${THINGSPEAK_READ_API_KEY}&results=${results}`;
