@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { AirQualityReading, LocationData } from '@/types';
-import { fetchLatestAirQuality, fetchHistoricalAirQuality } from '@/lib/airQualityService';
+import { fetchLatestAirQuality, fetchHistoricalAirQuality, type FetchLatestAirQualityResult } from '@/lib/airQualityService';
 import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LocationDisplay } from '@/components/LocationDisplay';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudDrizzle, CloudRain, CloudLightning } from 'lucide-react'; // Changed Gauge to Wind
+import { Thermometer, Droplets, Wind, CloudDrizzle, CloudRain, CloudLightning } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -24,11 +24,10 @@ export function HomePageClient() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    setIsLocationLoading(true); // Start loading location
     try {
-      const [latest, historical] = await Promise.all([
-        fetchLatestAirQuality(),
-        fetchHistoricalAirQuality(96) // Fetch for last 96 entries
-      ]);
+      const { reading: latest, channelLocation: tsLocation } = await fetchLatestAirQuality();
+      const historical = await fetchHistoricalAirQuality(96);
       
       if (latest) {
         setLatestReading(latest);
@@ -41,6 +40,42 @@ export function HomePageClient() {
       }
       setHistoricalData(historical || []);
 
+      // Prioritize ThingSpeak location
+      if (tsLocation && typeof tsLocation.latitude === 'number' && typeof tsLocation.longitude === 'number') {
+        setLocation(tsLocation);
+        setIsLocationLoading(false);
+      } else if (navigator.geolocation) {
+        // Fallback to device GPS
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+            setIsLocationLoading(false);
+          },
+          (error) => {
+            if (error.code !== error.PERMISSION_DENIED) { // Only log error if it's not permission denied
+              console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
+            }
+            toast({
+              title: error.code === error.PERMISSION_DENIED ? "Location Permission Denied" : "Location Error",
+              description: error.code === error.PERMISSION_DENIED ? "Location access was denied. Some features might be limited." : "Could not retrieve device location. Some features might be limited.",
+              variant: "default",
+            });
+            setIsLocationLoading(false);
+          }
+        );
+      } else {
+        // No ThingSpeak location and no GPS
+        toast({
+          title: "Location Not Available",
+          description: "Could not retrieve location from ThingSpeak or device.",
+          variant: "default",
+        });
+        setIsLocationLoading(false);
+      }
+
     } catch (error) {
       console.error("Failed to fetch air quality data:", error);
       toast({
@@ -48,6 +83,8 @@ export function HomePageClient() {
         description: "Could not fetch air quality data. Please try again later.",
         variant: "destructive",
       });
+      // Ensure loading states are reset on error too
+      setIsLocationLoading(false);
     } finally {
       setIsLoading(false);
     }
@@ -57,44 +94,6 @@ export function HomePageClient() {
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    if (!location && navigator.geolocation) {
-      setIsLocationLoading(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          setIsLocationLoading(false);
-        },
-        (error) => {
-          if (error.code === error.PERMISSION_DENIED) {
-            toast({
-              title: "Location Permission Denied",
-              description: "Location access was denied. Some features might be limited.",
-              variant: "default",
-            });
-          } else {
-            console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
-            toast({
-              title: "Location Error",
-              description: "Could not retrieve location. Some features might be limited.",
-              variant: "default",
-            });
-          }
-          setIsLocationLoading(false);
-        }
-      );
-    } else if (!navigator.geolocation) {
-       toast({
-        title: "Location Not Supported",
-        description: "Geolocation is not supported by your browser.",
-        variant: "default",
-      });
-      setIsLocationLoading(false);
-    }
-  }, [toast, location]);
 
   if (isLoading && !latestReading && historicalData.length === 0) { 
     return (
@@ -110,8 +109,8 @@ export function HomePageClient() {
         <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-black to-primary bg-clip-text text-transparent font-sans">
           Air Quality Dashboard
         </h1>
-        <Button onClick={loadData} variant="outline" size="sm" disabled={isLoading}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+        <Button onClick={loadData} variant="outline" size="sm" disabled={isLoading || isLocationLoading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${(isLoading || isLocationLoading) ? 'animate-spin' : ''}`} />
           Refresh Data
         </Button>
       </div>
@@ -139,7 +138,7 @@ export function HomePageClient() {
               title="CO2" 
               value={latestReading.co2.toFixed(0)}
               unit="ppm"
-              icon={Wind} // Changed from Gauge
+              icon={Wind}
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
               description="Carbon Dioxide Level"
             />
