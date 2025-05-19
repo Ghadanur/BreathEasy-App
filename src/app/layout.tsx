@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Roboto, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const roboto = Roboto({
+  weight: ['300', '400', '500', '700'],
+  style: ['normal', 'italic'],
   subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-roboto',
 });
 
 const geistMono = Geist_Mono({
@@ -28,9 +31,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body 
         className={cn(
-          geistSans.variable, 
+          roboto.variable, 
           geistMono.variable, 
-          "antialiased font-sans"
+          "antialiased font-sans" // font-sans will now use Roboto via Tailwind config
         )}
       >
         <div className={cn(
