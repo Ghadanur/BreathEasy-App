@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 210 20% 95%; /* Light Blue - #F0F8FF */
+    --background: 0 0% 100% / 0; /* Transparent White */
     --foreground: 210 25% 25%; /* Dark Grayish Blue */
 
     --card: 0 0% 100%; /* White */
@@ -54,7 +54,7 @@
 
   .dark {
     /* Define dark theme colors if needed, for now using light theme values as a base */
-    --background: 210 20% 10%;
+    --background: 0 0% 0% / 0; /* Transparent Black */
     --foreground: 210 20% 90%;
 
     --card: 210 20% 15%;
