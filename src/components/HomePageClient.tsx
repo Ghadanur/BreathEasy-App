@@ -71,7 +71,6 @@ export function HomePageClient() {
           setIsLocationLoading(false);
         },
         (error) => {
-          console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
           if (error.code === error.PERMISSION_DENIED) {
             toast({
               title: "Location Permission Denied",
@@ -79,6 +78,8 @@ export function HomePageClient() {
               variant: "default",
             });
           } else {
+            // Log other errors to the console
+            console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
             toast({
               title: "Location Error",
               description: "Could not retrieve location. Some features might be limited.",
