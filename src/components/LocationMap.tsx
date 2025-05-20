@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import 'leaflet/dist/leaflet.css';
+// Leaflet CSS is now in layout.tsx
 
 // Fix for default Leaflet marker icon issue with Webpack/Next.js
 // This ensures markers are displayed correctly.
@@ -66,13 +66,16 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
   const mapKey = `map-${location.latitude}-${location.longitude}`;
 
   useEffect(() => {
-    // Capture the current map instance from the ref.
-    // This specific instance is what this effect's cleanup function will operate on.
+    // Capture the current map instance from the ref when the effect sets up.
     const currentMapInstance = mapInstanceRef.current;
+    
+    // console.log('LocationMap effect: mapKey', mapKey, 'map instance to attach/curr:', currentMapInstance ? 'exists' : 'null');
 
     return () => {
+      // console.log('LocationMap CLEANUP: mapKey', mapKey, 'map instance to remove:', currentMapInstance ? 'exists' : 'null');
       if (currentMapInstance) {
-        currentMapInstance.remove(); // Explicitly remove the Leaflet map instance
+        currentMapInstance.remove();
+        // console.log('LocationMap CLEANUP: map.remove() called for mapKey', mapKey);
       }
     };
   }, [mapKey]); // Dependency on mapKey ensures cleanup runs if the map is meant to be replaced, or on unmount.
@@ -85,13 +88,14 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
       </CardHeader>
       <CardContent>
         <MapContainer
-            ref={mapInstanceRef} // Assign the Leaflet Map instance to this ref
-            key={mapKey} 
+            id={mapKey} // Explicitly set DOM ID for Leaflet
+            ref={(instance: L.Map | null) => { mapInstanceRef.current = instance; }} // Assign the Leaflet Map instance to this ref
+            key={mapKey} // React key for reconciliation
             center={position}
             zoom={13}
             scrollWheelZoom={true} 
             style={{ height: '250px', width: '100%', borderRadius: 'var(--radius)' }}
-            className="z-0"
+            className="z-0" // Ensures map tiles are below popups/markers if needed
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
