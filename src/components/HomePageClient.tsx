@@ -9,7 +9,7 @@ import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LocationDisplay } from '@/components/LocationDisplay';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudRain, Cloudy, RefreshCw } from 'lucide-react'; // Removed CloudFog
+import { Thermometer, Droplets, Wind, CloudRain, Cloudy, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 
@@ -148,12 +148,11 @@ export function HomePageClient() {
               description="Carbon Dioxide Level"
             />
              <LocationDisplay location={location} isLoading={isLocationLoading} />
-            {/* PM1.0 card removed */}
             <AirQualityCard 
               title="PM2.5" 
               value={latestReading.pm2_5.toFixed(1)} // From field6
               unit="μg/m³" 
-              icon={CloudRain} // Consistent icon for PM2.5
+              icon={CloudRain} 
               color="text-indigo-500"
               description="Particulate Matter <2.5μm"
             />
@@ -161,7 +160,7 @@ export function HomePageClient() {
               title="PM10" 
               value={latestReading.pm10.toFixed(1)} // From field7
               unit="μg/m³" 
-              icon={Cloudy} // Consistent icon for PM10
+              icon={Cloudy} 
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
@@ -176,11 +175,10 @@ export function HomePageClient() {
         {historicalData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <HistoricalDataChart data={historicalData} dataKey="temperature" title="Temperature Trend (°C)" color="hsl(var(--chart-1))" unit="°C" />
-            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO₂ Trend (ppm)" chartType="bar" color="hsl(var(--chart-2))" unit="ppm"/>
+            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO₂ Trend (ppm)" color="hsl(var(--chart-2))" unit="ppm"/>
             <HistoricalDataChart data={historicalData} dataKey="pm2_5" title="PM2.5 Trend (μg/m³)" color="hsl(var(--chart-3))" unit="μg/m³"/>
-            <HistoricalDataChart data={historicalData} dataKey="humidity" title="Humidity Trend (%)" chartType="bar" color="hsl(var(--chart-4))" unit="%"/>
-            {/* PM1.0 chart removed */}
-            <HistoricalDataChart data={historicalData} dataKey="pm10" title="PM10 Trend (μg/m³)" chartType="bar" color="hsl(var(--accent))" unit="μg/m³"/>
+            <HistoricalDataChart data={historicalData} dataKey="humidity" title="Humidity Trend (%)" color="hsl(var(--chart-4))" unit="%"/>
+            <HistoricalDataChart data={historicalData} dataKey="pm10" title="PM10 Trend (μg/m³)" color="hsl(var(--accent))" unit="μg/m³"/>
           </div>
         ) : (
            !isLoading && <p className="text-center text-muted-foreground">No historical data found or failed to load. Please check your ThingSpeak configuration.</p>
