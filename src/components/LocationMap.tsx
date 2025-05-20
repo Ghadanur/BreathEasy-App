@@ -3,10 +3,10 @@
 
 import type { LocationData } from '@/types';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-// import 'leaflet/dist/leaflet.css'; // Removed from here
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
+import { useEffect, useRef } from 'react'; // Import useEffect and useRef
 import { cn } from '@/lib/utils';
 
 // Fix for default Leaflet marker icon issue with Webpack/Next.js
@@ -27,6 +27,7 @@ interface LocationMapProps {
 
 export function LocationMap({ location, isLoading, className }: LocationMapProps) {
   const cardBaseClass = "shadow-lg";
+  const mapInstanceRef = useRef<L.Map | null>(null); // Ref to store the map instance
 
   if (isLoading) {
     return (
@@ -61,7 +62,18 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
   }
 
   const position: [number, number] = [location.latitude, location.longitude];
-  const mapKey = `map-${location.latitude}-${location.longitude}`; // Key to force remount on location change
+  const mapKey = `map-${location.latitude}-${location.longitude}`;
+
+  useEffect(() => {
+    // This effect's cleanup function will be called when the component unmounts
+    // or when mapKey changes (triggering a remount of MapContainer due to its own key prop).
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove(); // Explicitly remove the Leaflet map instance
+        mapInstanceRef.current = null;   // Clear the ref
+      }
+    };
+  }, [mapKey]); // Dependency on mapKey ensures cleanup runs if the map is meant to be replaced
 
   return (
     <Card className={cn(cardBaseClass, className)}>
@@ -71,12 +83,15 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
       </CardHeader>
       <CardContent>
         <MapContainer
-            key={mapKey} // Add key here
+            key={mapKey} 
             center={position}
             zoom={13}
-            scrollWheelZoom={true} // Enabled scroll wheel zoom
+            scrollWheelZoom={true} 
             style={{ height: '250px', width: '100%', borderRadius: 'var(--radius)' }}
-            className="z-0" // Ensure map container has a z-index if needed
+            className="z-0" 
+            whenCreated={(map) => { // Capture the map instance
+              mapInstanceRef.current = map;
+            }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
