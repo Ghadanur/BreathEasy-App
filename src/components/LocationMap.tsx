@@ -6,8 +6,9 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
-import { useEffect, useRef } from 'react'; // Import useEffect and useRef
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import 'leaflet/dist/leaflet.css';
 
 // Fix for default Leaflet marker icon issue with Webpack/Next.js
 // This ensures markers are displayed correctly.
@@ -27,7 +28,7 @@ interface LocationMapProps {
 
 export function LocationMap({ location, isLoading, className }: LocationMapProps) {
   const cardBaseClass = "shadow-lg";
-  const mapInstanceRef = useRef<L.Map | null>(null); // Ref to store the map instance
+  const mapInstanceRef = useRef<L.Map | null>(null); // Ref to store the Leaflet Map instance
 
   if (isLoading) {
     return (
@@ -65,15 +66,16 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
   const mapKey = `map-${location.latitude}-${location.longitude}`;
 
   useEffect(() => {
-    // This effect's cleanup function will be called when the component unmounts
-    // or when mapKey changes (triggering a remount of MapContainer due to its own key prop).
+    // Capture the current map instance from the ref.
+    // This specific instance is what this effect's cleanup function will operate on.
+    const currentMapInstance = mapInstanceRef.current;
+
     return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove(); // Explicitly remove the Leaflet map instance
-        mapInstanceRef.current = null;   // Clear the ref
+      if (currentMapInstance) {
+        currentMapInstance.remove(); // Explicitly remove the Leaflet map instance
       }
     };
-  }, [mapKey]); // Dependency on mapKey ensures cleanup runs if the map is meant to be replaced
+  }, [mapKey]); // Dependency on mapKey ensures cleanup runs if the map is meant to be replaced, or on unmount.
 
   return (
     <Card className={cn(cardBaseClass, className)}>
@@ -83,15 +85,13 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
       </CardHeader>
       <CardContent>
         <MapContainer
+            ref={mapInstanceRef} // Assign the Leaflet Map instance to this ref
             key={mapKey} 
             center={position}
             zoom={13}
             scrollWheelZoom={true} 
             style={{ height: '250px', width: '100%', borderRadius: 'var(--radius)' }}
-            className="z-0" 
-            whenCreated={(map) => { // Capture the map instance
-              mapInstanceRef.current = map;
-            }}
+            className="z-0"
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
