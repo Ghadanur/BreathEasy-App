@@ -1,8 +1,10 @@
+
 "use client";
 
 import type { AirQualityReading } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, BarChart, Bar, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from 'date-fns';
 
@@ -14,13 +16,6 @@ interface HistoricalDataChartProps {
   color?: string; // e.g., "hsl(var(--chart-1))"
   unit?: string;
 }
-
-const chartConfig = {
-  value: {
-    label: "Value",
-  },
-} satisfies import("@/components/ui/chart").ChartConfig;
-
 
 export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', color = "hsl(var(--chart-1))", unit }: HistoricalDataChartProps) {
   if (!data || data.length === 0) {
@@ -38,13 +33,19 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
 
   const formattedData = data.map(item => ({
     ...item,
-    timestamp: format(parseISO(item.timestamp), 'MMM dd, HH:mm'),
+    // Keep full timestamp for tooltips, original data inspection
+    fullTimestamp: format(parseISO(item.timestamp), 'MMM dd, yyyy HH:mm'), 
+    // Formatted timestamp for primary display on X-axis (if not overridden by tickFormatter logic)
+    timestamp: format(parseISO(item.timestamp), 'MMM dd, HH:mm'), 
     value: item[dataKey]
   }));
   
-  chartConfig.value.label = unit ? `${dataKey} (${unit})` : dataKey.toString();
-  const dynamicChartConfig = { ...chartConfig, value: { ...chartConfig.value, color } };
-
+  const chartDisplayConfig: ChartConfig = {
+    value: { // This 'value' matches the dataKey="value" in Line/Bar component
+      label: unit ? `${String(dataKey)} (${unit})` : String(dataKey),
+      color: color,
+    },
+  };
 
   const ChartComponent = chartType === 'line' ? LineChart : BarChart;
   const DataComponent = chartType === 'line' ? Line : Bar;
@@ -55,7 +56,7 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={dynamicChartConfig} className="h-[300px] w-full">
+        <ChartContainer config={chartDisplayConfig} className="h-[300px] w-full">
           <ChartComponent data={formattedData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis 
@@ -63,7 +64,14 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => value.slice(0,6)} // Shorten timestamp display
+              tickFormatter={(value: string) => {
+                // value is expected to be in "MMM dd, HH:mm" format
+                const parts = value.split(', ');
+                if (parts.length === 2) {
+                  return parts[1]; // Returns "HH:mm"
+                }
+                return value; // Fallback
+              }}
             />
             <YAxis 
               tickLine={false}
@@ -73,7 +81,15 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent indicator={chartType === 'line' ? 'dot' : 'rectangle'} />}
+              content={<ChartTooltipContent 
+                          indicator={chartType === 'line' ? 'dot' : 'rectangle'} 
+                          labelFormatter={(_label, payload) => {
+                            if (payload && payload.length > 0 && payload[0].payload.fullTimestamp) {
+                              return payload[0].payload.fullTimestamp;
+                            }
+                            return _label;
+                          }}
+                       />}
             />
             <DataComponent
               dataKey="value"
@@ -84,6 +100,7 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
               dot={{ r: 4, fill: color, stroke: "hsl(var(--background))", strokeWidth: 2 }}
               activeDot={{r: 6}}
               radius={chartType === 'bar' ? [4, 4, 0, 0] : undefined}
+              name={chartDisplayConfig.value.label} // Ensure legend uses the correct label
             />
             <ChartLegend content={<ChartLegendContent />} />
           </ChartComponent>
