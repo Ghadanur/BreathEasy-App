@@ -28,7 +28,7 @@ interface LocationMapProps {
 
 export function LocationMap({ location, isLoading, className }: LocationMapProps) {
   const cardBaseClass = "shadow-lg";
-  const mapInstanceRef = useRef<L.Map | null>(null); // Ref to store the Leaflet Map instance
+  const mapInstanceRef = useRef<L.Map | null>(null); 
 
   if (isLoading) {
     return (
@@ -66,19 +66,22 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
   const mapKey = `map-${location.latitude}-${location.longitude}`;
 
   useEffect(() => {
-    // Capture the current map instance from the ref when the effect sets up.
-    const currentMapInstance = mapInstanceRef.current;
-    
-    // console.log('LocationMap effect: mapKey', mapKey, 'map instance to attach/curr:', currentMapInstance ? 'exists' : 'null');
+    // This effect handles the cleanup of the map instance.
+    // It captures the current map instance when the effect for a specific mapKey is set up.
+    const mapInstanceToCleanUp = mapInstanceRef.current;
 
     return () => {
-      // console.log('LocationMap CLEANUP: mapKey', mapKey, 'map instance to remove:', currentMapInstance ? 'exists' : 'null');
-      if (currentMapInstance) {
-        currentMapInstance.remove();
-        // console.log('LocationMap CLEANUP: map.remove() called for mapKey', mapKey);
+      // When the component unmounts or mapKey changes, this cleanup function runs.
+      if (mapInstanceToCleanUp && typeof mapInstanceToCleanUp.remove === 'function') {
+        mapInstanceToCleanUp.remove();
+      }
+      // If the instance being cleaned up is the one currently in the ref, nullify the ref.
+      // This is important because whenCreated will set a new instance if the mapKey changes.
+      if (mapInstanceRef.current === mapInstanceToCleanUp) {
+        mapInstanceRef.current = null;
       }
     };
-  }, [mapKey]); // Dependency on mapKey ensures cleanup runs if the map is meant to be replaced, or on unmount.
+  }, [mapKey]); // Re-run this effect if mapKey changes
 
   return (
     <Card className={cn(cardBaseClass, className)}>
@@ -88,14 +91,21 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
       </CardHeader>
       <CardContent>
         <MapContainer
-            id={mapKey} // Explicitly set DOM ID for Leaflet
-            ref={(instance: L.Map | null) => { mapInstanceRef.current = instance; }} // Assign the Leaflet Map instance to this ref
-            key={mapKey} // React key for reconciliation
+            id={mapKey} 
+            key={mapKey} 
+            whenCreated={(map) => {
+              // If there was an old map instance (e.g. from a previous render with the same key, unlikely but defensive)
+              // remove it before assigning the new one.
+              if (mapInstanceRef.current && mapInstanceRef.current !== map) {
+                mapInstanceRef.current.remove();
+              }
+              mapInstanceRef.current = map;
+            }}
             center={position}
             zoom={13}
             scrollWheelZoom={true} 
             style={{ height: '250px', width: '100%', borderRadius: 'var(--radius)' }}
-            className="z-0" // Ensures map tiles are below popups/markers if needed
+            className="z-0" 
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
