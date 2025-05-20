@@ -3,15 +3,35 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { AirQualityReading, LocationData } from '@/types';
-import { fetchLatestAirQuality, fetchHistoricalAirQuality, type FetchLatestAirQualityResult } from '@/lib/airQualityService';
+import { fetchLatestAirQuality, fetchHistoricalAirQuality } from '@/lib/airQualityService';
 import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
-import { LocationDisplay } from '@/components/LocationDisplay';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudRain, Cloudy, RefreshCw } from 'lucide-react';
+import { Thermometer, Droplets, Wind, CloudRain, Cloudy, Leaf, RefreshCw } from 'lucide-react'; // Leaf might be used if needed
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
+import dynamic from 'next/dynamic';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // For dynamic loader
+import { MapPin } from 'lucide-react'; // For dynamic loader
+
+const LocationMap = dynamic(() => import('@/components/LocationMap'), {
+  ssr: false,
+  loading: () => (
+    <Card className="shadow-lg col-span-1 sm:col-span-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">Location Map</CardTitle>
+        <MapPin className="h-6 w-6 text-accent animate-pulse" />
+      </CardHeader>
+      <CardContent>
+        <div className="h-[250px] flex items-center justify-center bg-muted/50 rounded-md">
+          <p className="text-sm text-muted-foreground">Loading map...</p>
+        </div>
+      </CardContent>
+    </Card>
+  ),
+});
+
 
 export function HomePageClient() {
   const [latestReading, setLatestReading] = useState<AirQualityReading | null>(null);
@@ -23,7 +43,7 @@ export function HomePageClient() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    setIsLocationLoading(true);
+    setIsLocationLoading(true); // Start location loading
     try {
       const { reading: latest, channelLocation: tsChannelLocationInfo } = await fetchLatestAirQuality();
       const historical = await fetchHistoricalAirQuality(96);
@@ -69,7 +89,7 @@ export function HomePageClient() {
               description: error.code === error.PERMISSION_DENIED ? "Location access was denied. Some features might be limited." : "Could not retrieve device location. Some features might be limited.",
               variant: "default",
             });
-            setIsLocationLoading(false);
+            setIsLocationLoading(false); // Stop location loading on error
           }
         );
       } else {
@@ -79,7 +99,7 @@ export function HomePageClient() {
           description: "Could not retrieve location from any source.",
           variant: "default",
         });
-        setIsLocationLoading(false);
+        setIsLocationLoading(false); // Stop location loading
       }
 
     } catch (error) {
@@ -89,9 +109,9 @@ export function HomePageClient() {
         description: "Could not fetch air quality data. Please try again later.",
         variant: "destructive",
       });
-      setIsLocationLoading(false);
+      setIsLocationLoading(false); // Stop location loading on error
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Stop general loading
     }
   }, [toast]);
   
@@ -100,7 +120,7 @@ export function HomePageClient() {
   }, [loadData]);
 
 
-  if (isLoading && !latestReading && historicalData.length === 0) { 
+  if (isLoading && !latestReading && historicalData.length === 0 && isLocationLoading) { 
     return (
       <div className="container mx-auto p-4 min-h-[calc(100vh-4rem)] flex items-center justify-center">
         <LoadingSpinner text="Loading Air Quality Data..." size="lg" />
@@ -141,16 +161,15 @@ export function HomePageClient() {
             />
             <AirQualityCard 
               title="CO₂" 
-              value={latestReading.co2.toFixed(0)} // From field5 (MQ135)
+              value={latestReading.co2.toFixed(0)}
               unit="ppm"
-              icon={Wind}
+              icon={Wind} // Using Wind for CO2 as per previous discussions
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
-              description="Carbon Dioxide Level"
+              description="Carbon Dioxide Level (MQ135)"
             />
-             <LocationDisplay location={location} isLoading={isLocationLoading} />
             <AirQualityCard 
               title="PM2.5" 
-              value={latestReading.pm2_5.toFixed(1)} // From field6
+              value={latestReading.pm2_5.toFixed(1)}
               unit="μg/m³" 
               icon={CloudRain} 
               color="text-indigo-500"
@@ -158,12 +177,14 @@ export function HomePageClient() {
             />
             <AirQualityCard 
               title="PM10" 
-              value={latestReading.pm10.toFixed(1)} // From field7
+              value={latestReading.pm10.toFixed(1)}
               unit="μg/m³" 
               icon={Cloudy} 
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
+             {/* The LocationMap will span 2 columns on sm screens and up */}
+            <LocationMap location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2" />
           </>
         ) : (
           !isLoading && <p className="col-span-full text-center text-muted-foreground">Could not load current air quality data. Please check your ThingSpeak configuration.</p>
@@ -186,7 +207,11 @@ export function HomePageClient() {
       </section>
 
       <section>
-        <PersonalizedTips latestReading={latestReading} locationDataFromFeed={latestReading && latestReading.latitude && latestReading.longitude ? {latitude: latestReading.latitude, longitude: latestReading.longitude} : null} initialLocation={location} />
+        <PersonalizedTips 
+          latestReading={latestReading} 
+          locationDataFromFeed={latestReading && latestReading.latitude && latestReading.longitude ? {latitude: latestReading.latitude, longitude: latestReading.longitude} : null} 
+          initialLocation={location} 
+        />
       </section>
 
       <footer className="text-center py-8 text-sm text-muted-foreground">
