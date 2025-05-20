@@ -41,7 +41,7 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
   const formattedData = data.map(item => ({
     ...item,
     fullTimestamp: format(parseISO(item.timestamp), 'MMM dd, yyyy HH:mm'), 
-    timestamp: format(parseISO(item.timestamp), 'MMM dd, HH:mm'), 
+    timestamp: format(parseISO(item.timestamp), 'HH:mm'), 
     value: item[dataKey]
   }));
   
@@ -64,13 +64,9 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          tickFormatter={(value: string) => {
-            const parts = value.split(', ');
-            if (parts.length === 2) {
-              return parts[1]; 
-            }
-            return value; 
-          }}
+          // Show fewer ticks in modal view to "expand" the line segments
+          interval={isModal && formattedData.length > 10 ? Math.max(1, Math.floor(formattedData.length / 6)) : 'preserveStartEnd'}
+          tickFormatter={(value: string) => value} // Already formatted to HH:mm
         />
         <YAxis 
           tickLine={false}
@@ -86,7 +82,7 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
                         if (payload && payload.length > 0 && payload[0].payload.fullTimestamp) {
                           return payload[0].payload.fullTimestamp;
                         }
-                        return _label;
+                        return _label; // Fallback to the already formatted HH:mm timestamp if fullTimestamp isn't there
                       }}
                    />}
         />
