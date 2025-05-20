@@ -9,10 +9,9 @@ import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LocationDisplay } from '@/components/LocationDisplay';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudDrizzle, CloudRain, CloudLightning } from 'lucide-react';
+import { Thermometer, Droplets, Wind, CloudFog, CloudRain, Cloudy, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { RefreshCw } from 'lucide-react';
 
 export function HomePageClient() {
   const [latestReading, setLatestReading] = useState<AirQualityReading | null>(null);
@@ -24,9 +23,9 @@ export function HomePageClient() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    setIsLocationLoading(true); // Start loading location
+    setIsLocationLoading(true);
     try {
-      const { reading: latest, channelLocation: tsLocation } = await fetchLatestAirQuality();
+      const { reading: latest, channelLocation: tsChannelLocationInfo } = await fetchLatestAirQuality();
       const historical = await fetchHistoricalAirQuality(96);
       
       if (latest) {
@@ -40,12 +39,19 @@ export function HomePageClient() {
       }
       setHistoricalData(historical || []);
 
-      // Prioritize ThingSpeak location
-      if (tsLocation && typeof tsLocation.latitude === 'number' && typeof tsLocation.longitude === 'number') {
-        setLocation(tsLocation);
+      // Location Logic:
+      // 1. Prioritize lat/lon from the latest feed data (fields 3 & 4 from Arduino)
+      if (latest?.latitude && latest?.longitude && typeof latest.latitude === 'number' && typeof latest.longitude === 'number') {
+        setLocation({ latitude: latest.latitude, longitude: latest.longitude });
         setIsLocationLoading(false);
-      } else if (navigator.geolocation) {
-        // Fallback to device GPS
+      } 
+      // 2. Fallback to general ThingSpeak channel location if feed data doesn't have it
+      else if (tsChannelLocationInfo && typeof tsChannelLocationInfo.latitude === 'number' && typeof tsChannelLocationInfo.longitude === 'number') {
+        setLocation(tsChannelLocationInfo);
+        setIsLocationLoading(false);
+      } 
+      // 3. Fallback to device GPS
+      else if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             setLocation({
@@ -55,7 +61,7 @@ export function HomePageClient() {
             setIsLocationLoading(false);
           },
           (error) => {
-            if (error.code !== error.PERMISSION_DENIED) { // Only log error if it's not permission denied
+            if (error.code !== error.PERMISSION_DENIED) {
               console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
             }
             toast({
@@ -67,10 +73,10 @@ export function HomePageClient() {
           }
         );
       } else {
-        // No ThingSpeak location and no GPS
+        // No location from feed, channel, or GPS
         toast({
           title: "Location Not Available",
-          description: "Could not retrieve location from ThingSpeak or device.",
+          description: "Could not retrieve location from any source.",
           variant: "default",
         });
         setIsLocationLoading(false);
@@ -83,7 +89,6 @@ export function HomePageClient() {
         description: "Could not fetch air quality data. Please try again later.",
         variant: "destructive",
       });
-      // Ensure loading states are reset on error too
       setIsLocationLoading(false);
     } finally {
       setIsLoading(false);
@@ -135,25 +140,25 @@ export function HomePageClient() {
               description="Relative humidity level"
             />
             <AirQualityCard 
-              title="CO2" 
-              value={latestReading.co2.toFixed(0)}
+              title="CO2 (MQ135)" 
+              value={latestReading.co2.toFixed(0)} // From field5 (MQ135)
               unit="ppm"
               icon={Wind}
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
-              description="Carbon Dioxide Level"
+              description="Carbon Dioxide Level (MQ135)"
             />
-            <LocationDisplay location={location} isLoading={isLocationLoading} />
+             <LocationDisplay location={location} isLoading={isLocationLoading} />
             <AirQualityCard 
-              title="PM10 (Alt.)" 
-              value={latestReading.pm10_sensor_alternate.toFixed(1)} 
+              title="PM1.0" 
+              value={latestReading.pm1.toFixed(1)} // From field6
               unit="μg/m³" 
-              icon={CloudDrizzle}
-              color="text-purple-500"
-              description="Particulate Matter <10μm (Alt. Sensor)"
+              icon={CloudFog} 
+              color="text-teal-500"
+              description="Particulate Matter <1μm"
             />
             <AirQualityCard 
               title="PM2.5" 
-              value={latestReading.pm2_5.toFixed(1)} 
+              value={latestReading.pm2_5.toFixed(1)} // From field7
               unit="μg/m³" 
               icon={CloudRain}
               color="text-indigo-500"
@@ -161,11 +166,11 @@ export function HomePageClient() {
             />
             <AirQualityCard 
               title="PM10" 
-              value={latestReading.pm10.toFixed(1)} 
+              value={latestReading.pm10.toFixed(1)} // From field8
               unit="μg/m³" 
-              icon={CloudLightning}
-              color="text-gray-500"
-              description="Particulate Matter <10μm (Main Sensor)"
+              icon={Cloudy} 
+              color="text-slate-500"
+              description="Particulate Matter <10μm"
             />
           </>
         ) : (
@@ -178,9 +183,11 @@ export function HomePageClient() {
         {historicalData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <HistoricalDataChart data={historicalData} dataKey="temperature" title="Temperature Trend (°C)" color="hsl(var(--chart-1))" unit="°C" />
-            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO2 Trend (ppm)" chartType="bar" color="hsl(var(--chart-2))" unit="ppm"/>
+            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO2 (MQ135) Trend (ppm)" chartType="bar" color="hsl(var(--chart-2))" unit="ppm"/>
             <HistoricalDataChart data={historicalData} dataKey="pm2_5" title="PM2.5 Trend (μg/m³)" color="hsl(var(--chart-3))" unit="μg/m³"/>
             <HistoricalDataChart data={historicalData} dataKey="humidity" title="Humidity Trend (%)" chartType="bar" color="hsl(var(--chart-4))" unit="%"/>
+            <HistoricalDataChart data={historicalData} dataKey="pm1" title="PM1.0 Trend (μg/m³)" color="hsl(var(--chart-5))" unit="μg/m³"/>
+            <HistoricalDataChart data={historicalData} dataKey="pm10" title="PM10 Trend (μg/m³)" chartType="bar" color="hsl(var(--accent))" unit="μg/m³"/>
           </div>
         ) : (
            !isLoading && <p className="text-center text-muted-foreground">No historical data found or failed to load. Please check your ThingSpeak configuration.</p>
@@ -188,7 +195,7 @@ export function HomePageClient() {
       </section>
 
       <section>
-        <PersonalizedTips latestReading={latestReading} location={location} />
+        <PersonalizedTips latestReading={latestReading} locationDataFromFeed={latestReading && latestReading.latitude && latestReading.longitude ? {latitude: latestReading.latitude, longitude: latestReading.longitude} : null} initialLocation={location} />
       </section>
 
       <footer className="text-center py-8 text-sm text-muted-foreground">

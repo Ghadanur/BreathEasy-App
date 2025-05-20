@@ -3,10 +3,12 @@ export interface AirQualityReading {
   timestamp: string; // ISO string date
   temperature: number; // Celsius
   humidity: number; // Percentage
-  co2: number; // CO2 level in ppm (formerly aqi)
-  pm10_sensor_alternate: number; // PM10 μg/m³ from an alternate sensor/field (formerly pm1)
-  pm2_5: number; // PM2.5 μg/m³
-  pm10: number; // PM10 μg/m³
+  co2: number; // CO2 level in ppm (from MQ135 mapped to field5)
+  pm1: number; // PM1.0 μg/m³ (from field6)
+  pm2_5: number; // PM2.5 μg/m³ (from field7)
+  pm10: number; // PM10 μg/m³ (from field8)
+  latitude?: number; // Optional: from field3
+  longitude?: number; // Optional: from field4
 }
 
 export interface LocationData {

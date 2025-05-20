@@ -14,10 +14,11 @@ import { ScrollArea } from './ui/scroll-area';
 
 interface PersonalizedTipsProps {
   latestReading: AirQualityReading | null;
-  location: LocationData | null;
+  locationDataFromFeed: LocationData | null; // Specific location from the latest feed, if available
+  initialLocation: LocationData | null; // General location (channel or GPS)
 }
 
-export function PersonalizedTips({ latestReading, location: initialLocation }: PersonalizedTipsProps) {
+export function PersonalizedTips({ latestReading, locationDataFromFeed, initialLocation }: PersonalizedTipsProps) {
   const [userLocationInput, setUserLocationInput] = useState('');
   const [tips, setTips] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,20 +26,24 @@ export function PersonalizedTips({ latestReading, location: initialLocation }: P
   const { toast } = useToast();
 
   useEffect(() => {
-    if (initialLocation?.address) {
-      setUserLocationInput(initialLocation.address);
-    } else if (initialLocation) {
-      setUserLocationInput(`${initialLocation.latitude.toFixed(4)}, ${initialLocation.longitude.toFixed(4)}`);
+    // Prioritize location from feed, then initialLocation (which could be channel's or GPS)
+    const bestLocation = locationDataFromFeed || initialLocation;
+    if (bestLocation?.address) {
+      setUserLocationInput(bestLocation.address);
+    } else if (bestLocation) {
+      setUserLocationInput(`${bestLocation.latitude.toFixed(4)}, ${bestLocation.longitude.toFixed(4)}`);
     }
-  }, [initialLocation]);
+  }, [locationDataFromFeed, initialLocation]);
 
   const fetchTips = useCallback(async () => {
     if (!latestReading) {
       toast({ title: "Missing Data", description: "Current air quality data is not available.", variant: "destructive" });
       return;
     }
-    if (!userLocationInput && !initialLocation) {
-      toast({ title: "Missing Location", description: "Please provide your location.", variant: "destructive" });
+    
+    const bestLocationForTips = locationDataFromFeed || initialLocation;
+    if (!userLocationInput && !bestLocationForTips) {
+      toast({ title: "Missing Location", description: "Please provide your location or ensure it's available from the data feed.", variant: "destructive" });
       return;
     }
 
@@ -48,19 +53,23 @@ export function PersonalizedTips({ latestReading, location: initialLocation }: P
 
     try {
       const inputData = {
-        location: userLocationInput || (initialLocation ? `${initialLocation.latitude}, ${initialLocation.longitude}`: "Unknown Location"),
+        location: userLocationInput || (bestLocationForTips ? `${bestLocationForTips.latitude}, ${bestLocationForTips.longitude}`: "Unknown Location"),
         temperature: latestReading.temperature,
         humidity: latestReading.humidity,
-        co2Level: latestReading.co2, // Changed from airQualityIndex: latestReading.aqi
+        co2Level: latestReading.co2,
+        particulateMatterPM1: latestReading.pm1,
         particulateMatterPM2_5: latestReading.pm2_5,
-        particulateMatterPM10: latestReading.pm10, // This uses the main PM10 reading
+        particulateMatterPM10: latestReading.pm10,
       };
       
       const result: PersonalizedAirQualityTipsOutput = await getPersonalizedAirQualityTips(inputData);
-      if (result && result.tips) {
+      if (result && result.tips && result.tips.length > 0) {
         setTips(result.tips);
       } else {
-        setError("Could not retrieve tips. The AI model might have returned an unexpected response.");
+        setError("Could not retrieve tips. The AI model might have returned an unexpected response or no tips.");
+        if (result && result.tips && result.tips.length === 0) {
+           toast({ title: "No Tips Generated", description: "The AI model did not generate any tips for the current conditions.", variant: "default" });
+        }
       }
     } catch (e) {
       console.error("Error fetching tips:", e);
@@ -70,7 +79,7 @@ export function PersonalizedTips({ latestReading, location: initialLocation }: P
     } finally {
       setIsLoading(false);
     }
-  }, [latestReading, userLocationInput, initialLocation, toast]);
+  }, [latestReading, userLocationInput, locationDataFromFeed, initialLocation, toast]);
 
   return (
     <Card className="shadow-lg col-span-1 md:col-span-2 lg:col-span-3">
@@ -91,7 +100,9 @@ export function PersonalizedTips({ latestReading, location: initialLocation }: P
             type="text"
             value={userLocationInput}
             onChange={(e) => setUserLocationInput(e.target.value)}
-            placeholder={initialLocation ? (initialLocation.address || `${initialLocation.latitude.toFixed(4)}, ${initialLocation.longitude.toFixed(4)}`) : "Enter your location"}
+            placeholder={ (locationDataFromFeed || initialLocation) ? 
+                          ((locationDataFromFeed || initialLocation)?.address || `${(locationDataFromFeed || initialLocation)?.latitude.toFixed(4)}, ${(locationDataFromFeed || initialLocation)?.longitude.toFixed(4)}`) 
+                          : "Enter your location"}
             disabled={isLoading}
           />
         </div>
