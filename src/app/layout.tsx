@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Roboto, Geist_Mono, EB_Garamond } from 'next/font/google';
 import './globals.css';
-import 'leaflet/dist/leaflet.css'; // Added Leaflet CSS here
+// import 'leaflet/dist/leaflet.css'; // Removed Leaflet CSS
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 

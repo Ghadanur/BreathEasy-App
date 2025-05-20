@@ -8,30 +8,10 @@ import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudRain, Cloudy, Leaf, RefreshCw } from 'lucide-react'; // Leaf might be used if needed
+import { Thermometer, Droplets, Wind, CloudRain, Cloudy, RefreshCw, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import dynamic from 'next/dynamic';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // For dynamic loader
-import { MapPin } from 'lucide-react'; // For dynamic loader
-
-const LocationMap = dynamic(() => import('@/components/LocationMap'), {
-  ssr: false,
-  loading: () => (
-    <Card className="shadow-lg col-span-1 sm:col-span-2">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Location Map</CardTitle>
-        <MapPin className="h-6 w-6 text-accent animate-pulse" />
-      </CardHeader>
-      <CardContent>
-        <div className="h-[250px] flex items-center justify-center bg-muted/50 rounded-md">
-          <p className="text-sm text-muted-foreground">Loading map...</p>
-        </div>
-      </CardContent>
-    </Card>
-  ),
-});
-
+import { LocationDisplay } from '@/components/LocationDisplay'; // Import LocationDisplay
 
 export function HomePageClient() {
   const [latestReading, setLatestReading] = useState<AirQualityReading | null>(null);
@@ -43,7 +23,7 @@ export function HomePageClient() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    setIsLocationLoading(true); // Start location loading
+    setIsLocationLoading(true);
     try {
       const { reading: latest, channelLocation: tsChannelLocationInfo } = await fetchLatestAirQuality();
       const historical = await fetchHistoricalAirQuality(96);
@@ -59,18 +39,14 @@ export function HomePageClient() {
       }
       setHistoricalData(historical || []);
 
-      // Location Logic:
-      // 1. Prioritize lat/lon from the latest feed data (fields 3 & 4 from ThingSpeak)
       if (latest?.latitude && latest?.longitude && typeof latest.latitude === 'number' && typeof latest.longitude === 'number') {
         setLocation({ latitude: latest.latitude, longitude: latest.longitude });
         setIsLocationLoading(false);
       } 
-      // 2. Fallback to general ThingSpeak channel location if feed data doesn't have it
       else if (tsChannelLocationInfo && typeof tsChannelLocationInfo.latitude === 'number' && typeof tsChannelLocationInfo.longitude === 'number') {
         setLocation(tsChannelLocationInfo);
         setIsLocationLoading(false);
       } 
-      // 3. Fallback to device GPS
       else if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -89,17 +65,16 @@ export function HomePageClient() {
               description: error.code === error.PERMISSION_DENIED ? "Location access was denied. Some features might be limited." : "Could not retrieve device location. Some features might be limited.",
               variant: "default",
             });
-            setIsLocationLoading(false); // Stop location loading on error
+            setIsLocationLoading(false);
           }
         );
       } else {
-        // No location from feed, channel, or GPS
         toast({
           title: "Location Not Available",
           description: "Could not retrieve location from any source.",
           variant: "default",
         });
-        setIsLocationLoading(false); // Stop location loading
+        setIsLocationLoading(false);
       }
 
     } catch (error) {
@@ -109,9 +84,9 @@ export function HomePageClient() {
         description: "Could not fetch air quality data. Please try again later.",
         variant: "destructive",
       });
-      setIsLocationLoading(false); // Stop location loading on error
+      setIsLocationLoading(false);
     } finally {
-      setIsLoading(false); // Stop general loading
+      setIsLoading(false);
     }
   }, [toast]);
   
@@ -163,7 +138,7 @@ export function HomePageClient() {
               title="CO₂" 
               value={latestReading.co2.toFixed(0)}
               unit="ppm"
-              icon={Wind} // Using Wind for CO2 as per previous discussions
+              icon={Wind}
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
               description="Carbon Dioxide Level (MQ135)"
             />
@@ -183,8 +158,7 @@ export function HomePageClient() {
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
-             {/* The LocationMap will span 2 columns on sm screens and up */}
-            <LocationMap location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2" />
+            <LocationDisplay location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2" />
           </>
         ) : (
           !isLoading && <p className="col-span-full text-center text-muted-foreground">Could not load current air quality data. Please check your ThingSpeak configuration.</p>
