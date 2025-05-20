@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Roboto, Geist_Mono, EB_Garamond } from 'next/font/google';
 import './globals.css';
+import 'leaflet/dist/leaflet.css'; // Added Leaflet CSS here
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
@@ -42,7 +43,7 @@ export default function RootLayout({
         className={cn(
           roboto.variable, 
           geistMono.variable, 
-          ebGaramond.variable, // Added EB Garamond variable
+          ebGaramond.variable, 
           "antialiased font-sans" 
         )}
       >
