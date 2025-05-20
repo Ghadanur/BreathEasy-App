@@ -7,6 +7,11 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import type { ChartConfig } from '@/components/ui/chart';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, BarChart, Bar, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Maximize2 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface HistoricalDataChartProps {
   data: AirQualityReading[];
@@ -18,6 +23,8 @@ interface HistoricalDataChartProps {
 }
 
 export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', color = "hsl(var(--chart-1))", unit }: HistoricalDataChartProps) {
+  const isMobile = useIsMobile();
+
   if (!data || data.length === 0) {
     return (
       <Card className="shadow-lg">
@@ -33,15 +40,13 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
 
   const formattedData = data.map(item => ({
     ...item,
-    // Keep full timestamp for tooltips, original data inspection
     fullTimestamp: format(parseISO(item.timestamp), 'MMM dd, yyyy HH:mm'), 
-    // Formatted timestamp for primary display on X-axis (if not overridden by tickFormatter logic)
     timestamp: format(parseISO(item.timestamp), 'MMM dd, HH:mm'), 
     value: item[dataKey]
   }));
   
   const chartDisplayConfig: ChartConfig = {
-    value: { // This 'value' matches the dataKey="value" in Line/Bar component
+    value: { 
       label: unit ? `${String(dataKey)} (${unit})` : String(dataKey),
       color: color,
     },
@@ -50,62 +55,84 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
   const ChartComponent = chartType === 'line' ? LineChart : BarChart;
   const DataComponent = chartType === 'line' ? Line : Bar;
 
+  const renderChart = (isModal: boolean = false) => (
+    <ChartContainer config={chartDisplayConfig} className={cn("w-full", isModal ? "h-[70vh]" : "h-[300px]")}>
+      <ChartComponent data={formattedData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <XAxis 
+          dataKey="timestamp" 
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value: string) => {
+            const parts = value.split(', ');
+            if (parts.length === 2) {
+              return parts[1]; 
+            }
+            return value; 
+          }}
+        />
+        <YAxis 
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          domain={['auto', 'auto']}
+        />
+        <ChartTooltip
+          cursor={false}
+          content={<ChartTooltipContent 
+                      indicator={chartType === 'line' ? 'dot' : 'rectangle'} 
+                      labelFormatter={(_label, payload) => {
+                        if (payload && payload.length > 0 && payload[0].payload.fullTimestamp) {
+                          return payload[0].payload.fullTimestamp;
+                        }
+                        return _label;
+                      }}
+                   />}
+        />
+        <DataComponent
+          dataKey="value"
+          type="monotone"
+          stroke={color}
+          fill={color}
+          strokeWidth={2}
+          dot={{ r: 4, fill: color, stroke: "hsl(var(--background))", strokeWidth: 2 }}
+          activeDot={{r: 6}}
+          radius={chartType === 'bar' ? [4, 4, 0, 0] : undefined}
+          name={chartDisplayConfig.value.label} 
+        />
+        <ChartLegend content={<ChartLegendContent />} />
+      </ChartComponent>
+    </ChartContainer>
+  );
+
   return (
     <Card className="shadow-lg col-span-1 md:col-span-2">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{title}</CardTitle>
+        {isMobile && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Maximize2 className="h-5 w-5" />
+                <span className="sr-only">Expand chart</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[90vw] h-[85vh] flex flex-col p-4">
+              <DialogHeader className="pb-2">
+                <DialogTitle>{title}</DialogTitle>
+              </DialogHeader>
+              <div className="flex-grow">
+                {renderChart(true)}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartDisplayConfig} className="h-[300px] w-full">
-          <ChartComponent data={formattedData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis 
-              dataKey="timestamp" 
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value: string) => {
-                // value is expected to be in "MMM dd, HH:mm" format
-                const parts = value.split(', ');
-                if (parts.length === 2) {
-                  return parts[1]; // Returns "HH:mm"
-                }
-                return value; // Fallback
-              }}
-            />
-            <YAxis 
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              domain={['auto', 'auto']}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent 
-                          indicator={chartType === 'line' ? 'dot' : 'rectangle'} 
-                          labelFormatter={(_label, payload) => {
-                            if (payload && payload.length > 0 && payload[0].payload.fullTimestamp) {
-                              return payload[0].payload.fullTimestamp;
-                            }
-                            return _label;
-                          }}
-                       />}
-            />
-            <DataComponent
-              dataKey="value"
-              type="monotone"
-              stroke={color}
-              fill={color}
-              strokeWidth={2}
-              dot={{ r: 4, fill: color, stroke: "hsl(var(--background))", strokeWidth: 2 }}
-              activeDot={{r: 6}}
-              radius={chartType === 'bar' ? [4, 4, 0, 0] : undefined}
-              name={chartDisplayConfig.value.label} // Ensure legend uses the correct label
-            />
-            <ChartLegend content={<ChartLegendContent />} />
-          </ChartComponent>
-        </ChartContainer>
+        {renderChart(false)}
       </CardContent>
     </Card>
   );
 }
+
