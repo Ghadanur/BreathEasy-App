@@ -9,7 +9,7 @@ import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LocationDisplay } from '@/components/LocationDisplay';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudFog, CloudRain, Cloudy, RefreshCw } from 'lucide-react';
+import { Thermometer, Droplets, Wind, CloudRain, Cloudy, RefreshCw } from 'lucide-react'; // Removed CloudFog
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 
@@ -40,7 +40,7 @@ export function HomePageClient() {
       setHistoricalData(historical || []);
 
       // Location Logic:
-      // 1. Prioritize lat/lon from the latest feed data (fields 3 & 4 from Arduino)
+      // 1. Prioritize lat/lon from the latest feed data (fields 3 & 4 from ThingSpeak)
       if (latest?.latitude && latest?.longitude && typeof latest.latitude === 'number' && typeof latest.longitude === 'number') {
         setLocation({ latitude: latest.latitude, longitude: latest.longitude });
         setIsLocationLoading(false);
@@ -140,35 +140,28 @@ export function HomePageClient() {
               description="Relative humidity level"
             />
             <AirQualityCard 
-              title="CO2 (MQ135)" 
+              title="CO₂" 
               value={latestReading.co2.toFixed(0)} // From field5 (MQ135)
               unit="ppm"
               icon={Wind}
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
-              description="Carbon Dioxide Level (MQ135)"
+              description="Carbon Dioxide Level"
             />
              <LocationDisplay location={location} isLoading={isLocationLoading} />
-            <AirQualityCard 
-              title="PM1.0" 
-              value={latestReading.pm1.toFixed(1)} // From field6
-              unit="μg/m³" 
-              icon={CloudFog} 
-              color="text-teal-500"
-              description="Particulate Matter <1μm"
-            />
+            {/* PM1.0 card removed */}
             <AirQualityCard 
               title="PM2.5" 
-              value={latestReading.pm2_5.toFixed(1)} // From field7
+              value={latestReading.pm2_5.toFixed(1)} // From field6
               unit="μg/m³" 
-              icon={CloudRain}
+              icon={CloudRain} // Consistent icon for PM2.5
               color="text-indigo-500"
               description="Particulate Matter <2.5μm"
             />
             <AirQualityCard 
               title="PM10" 
-              value={latestReading.pm10.toFixed(1)} // From field8
+              value={latestReading.pm10.toFixed(1)} // From field7
               unit="μg/m³" 
-              icon={Cloudy} 
+              icon={Cloudy} // Consistent icon for PM10
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
@@ -183,10 +176,10 @@ export function HomePageClient() {
         {historicalData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <HistoricalDataChart data={historicalData} dataKey="temperature" title="Temperature Trend (°C)" color="hsl(var(--chart-1))" unit="°C" />
-            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO2 (MQ135) Trend (ppm)" chartType="bar" color="hsl(var(--chart-2))" unit="ppm"/>
+            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO₂ Trend (ppm)" chartType="bar" color="hsl(var(--chart-2))" unit="ppm"/>
             <HistoricalDataChart data={historicalData} dataKey="pm2_5" title="PM2.5 Trend (μg/m³)" color="hsl(var(--chart-3))" unit="μg/m³"/>
             <HistoricalDataChart data={historicalData} dataKey="humidity" title="Humidity Trend (%)" chartType="bar" color="hsl(var(--chart-4))" unit="%"/>
-            <HistoricalDataChart data={historicalData} dataKey="pm1" title="PM1.0 Trend (μg/m³)" color="hsl(var(--chart-5))" unit="μg/m³"/>
+            {/* PM1.0 chart removed */}
             <HistoricalDataChart data={historicalData} dataKey="pm10" title="PM10 Trend (μg/m³)" chartType="bar" color="hsl(var(--accent))" unit="μg/m³"/>
           </div>
         ) : (

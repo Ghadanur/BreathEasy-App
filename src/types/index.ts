@@ -4,9 +4,9 @@ export interface AirQualityReading {
   temperature: number; // Celsius
   humidity: number; // Percentage
   co2: number; // CO2 level in ppm (from MQ135 mapped to field5)
-  pm1: number; // PM1.0 μg/m³ (from field6)
-  pm2_5: number; // PM2.5 μg/m³ (from field7)
-  pm10: number; // PM10 μg/m³ (from field8)
+  // PM1.0 is removed as per new field mapping
+  pm2_5: number; // PM2.5 μg/m³ (from field6)
+  pm10: number; // PM10 μg/m³ (from field7)
   latitude?: number; // Optional: from field3
   longitude?: number; // Optional: from field4
 }

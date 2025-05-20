@@ -8,15 +8,15 @@ const THINGSPEAK_READ_API_KEY = process.env.NEXT_PUBLIC_THINGSPEAK_READ_API_KEY;
 
 const BASE_URL = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL_ID}`;
 
-// ThingSpeak Field Mapping (based on provided Arduino code):
+// ThingSpeak Field Mapping (based on user's provided list):
 // field1: Temperature (°C)
 // field2: Humidity (%)
 // field3: Latitude
 // field4: Longitude
-// field5: MQ135 (CO2 ppm or general AQI)
-// field6: PM1.0 (μg/m³)
-// field7: PM2.5 (μg/m³)
-// field8: PM10 (μg/m³)
+// field5: CO₂ (ppm)
+// field6: PM2.5 (μg/m³)
+// field7: PM10 (μg/m³)
+// field8: Not used for these primary readings
 
 interface ThingSpeakFeed {
   created_at: string;
@@ -25,10 +25,10 @@ interface ThingSpeakFeed {
   field2: string | null; // Humidity
   field3: string | null; // Latitude
   field4: string | null; // Longitude
-  field5: string | null; // MQ135 (CO2/AQI)
-  field6: string | null; // PM1.0
-  field7: string | null; // PM2.5
-  field8: string | null; // PM10
+  field5: string | null; // CO₂
+  field6: string | null; // PM2.5
+  field7: string | null; // PM10
+  field8: string | null; // Potentially other data, ignored for this app's core readings
 }
 
 interface ThingSpeakChannel {
@@ -38,12 +38,12 @@ interface ThingSpeakChannel {
   longitude: string | null;
   field1: string; // Corresponds to Temperature
   field2: string; // Corresponds to Humidity
-  field3: string; // Corresponds to Latitude (also in feed)
-  field4: string; // Corresponds to Longitude (also in feed)
-  field5: string; // Corresponds to MQ135
-  field6: string; // Corresponds to PM1.0
-  field7: string; // Corresponds to PM2.5
-  field8: string; // Corresponds to PM10
+  field3: string; // Corresponds to Latitude
+  field4: string; // Corresponds to Longitude
+  field5: string; // Corresponds to CO₂
+  field6: string; // Corresponds to PM2.5
+  field7: string; // Corresponds to PM10
+  // field8 label might exist but data is not used for core readings
   created_at: string;
   updated_at: string;
   last_entry_id: number;
@@ -65,20 +65,19 @@ function parseFeedToAirQualityReading(feed: ThingSpeakFeed): AirQualityReading {
     timestamp: formatISO(new Date(feed.created_at)),
     temperature: parseFloat(feed.field1 || '0'),
     humidity: parseFloat(feed.field2 || '0'),
-    co2: parseFloat(feed.field5 || '0'), // MQ135 mapped to co2
-    pm1: parseFloat(feed.field6 || '0'),
-    pm2_5: parseFloat(feed.field7 || '0'),
-    pm10: parseFloat(feed.field8 || '0'),
+    co2: parseFloat(feed.field5 || '0'), 
+    pm2_5: parseFloat(feed.field6 || '0'),
+    pm10: parseFloat(feed.field7 || '0'),
   };
 
   // Parse latitude and longitude from feed if available
   const lat = parseFloat(feed.field3 || '');
   const lon = parseFloat(feed.field4 || '');
 
-  if (!isNaN(lat) && lat !== 0) { // Assuming 0 might be an uninitialized value for feed lat
+  if (!isNaN(lat) && lat !== 0) {
     reading.latitude = lat;
   }
-  if (!isNaN(lon) && lon !== 0) { // Assuming 0 might be an uninitialized value for feed lon
+  if (!isNaN(lon) && lon !== 0) {
     reading.longitude = lon;
   }
   
@@ -117,7 +116,6 @@ export async function fetchLatestAirQuality(): Promise<FetchLatestAirQualityResu
       };
     } 
     // Fallback to channel's general latitude/longitude if feed doesn't have specific lat/lon
-    // or if result.reading is null but channel data exists
     else if (data.channel && data.channel.latitude && data.channel.longitude) {
       const channelLat = parseFloat(data.channel.latitude);
       const channelLon = parseFloat(data.channel.longitude);
@@ -139,7 +137,6 @@ export async function fetchHistoricalAirQuality(results: number = 96): Promise<A
     return [];
   }
 
-  // Request more fields for historical data if they are to be charted
   const url = `${BASE_URL}/feeds.json?api_key=${THINGSPEAK_READ_API_KEY}&results=${results}`;
 
   try {

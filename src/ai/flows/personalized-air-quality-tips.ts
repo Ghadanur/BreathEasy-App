@@ -10,16 +10,14 @@ const PersonalizedAirQualityTipsInputSchema = z.object({
   location: z.string().describe('The user\'s current location.'),
   temperature: z.number().describe('The current temperature in Celsius.'),
   humidity: z.number().describe('The current humidity percentage.'),
-  co2Level: z.number().describe('The current CO2 level in ppm (from MQ135 sensor).'),
-  particulateMatterPM1: z
-    .number()
-    .describe('The current PM1.0 particulate matter concentration in μg/m³.'),
+  co2Level: z.number().describe('The current CO2 level in ppm (from MQ135 sensor, ThingSpeak field5).'),
+  // particulateMatterPM1 removed as per new field mapping
   particulateMatterPM2_5: z
     .number()
-    .describe('The current PM2.5 particulate matter concentration in μg/m³.'),
+    .describe('The current PM2.5 particulate matter concentration in μg/m³ (ThingSpeak field6).'),
   particulateMatterPM10: z
     .number()
-    .describe('The current PM10 particulate matter concentration in μg/m³.'),
+    .describe('The current PM10 particulate matter concentration in μg/m³ (ThingSpeak field7).'),
 });
 
 export type PersonalizedAirQualityTipsInput = z.infer<
@@ -54,14 +52,13 @@ const prompt = ai.definePrompt({
   Temperature: {{temperature}} °C
   Humidity: {{humidity}}%
   CO2 Level: {{co2Level}} ppm 
-  PM1.0: {{particulateMatterPM1}} μg/m³
   PM2.5: {{particulateMatterPM2_5}} μg/m³
   PM10: {{particulateMatterPM10}} μg/m³
 
   Based on this information, provide a list of personalized tips to help the user improve the air quality in their immediate surroundings.
   The tips should be specific and actionable.
   Consider the CO2 level: if it's high, suggest ventilation.
-  Consider particulate matter (PM1.0, PM2.5, PM10): if high, suggest air purifiers, closing windows during high outdoor pollution, etc.
+  Consider particulate matter (PM2.5, PM10): if high, suggest air purifiers, closing windows during high outdoor pollution, etc.
   Provide at least 3-5 distinct tips.
   Tips:
   `,

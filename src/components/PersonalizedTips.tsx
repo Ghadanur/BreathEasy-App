@@ -57,7 +57,7 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
         temperature: latestReading.temperature,
         humidity: latestReading.humidity,
         co2Level: latestReading.co2,
-        particulateMatterPM1: latestReading.pm1,
+        // particulateMatterPM1 removed
         particulateMatterPM2_5: latestReading.pm2_5,
         particulateMatterPM10: latestReading.pm10,
       };
