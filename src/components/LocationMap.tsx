@@ -61,6 +61,7 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
   }
 
   const position: [number, number] = [location.latitude, location.longitude];
+  const mapKey = `map-${location.latitude}-${location.longitude}`; // Key to force remount on location change
 
   return (
     <Card className={cn(cardBaseClass, className)}>
@@ -69,9 +70,10 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
         <MapPin className="h-6 w-6 text-accent" />
       </CardHeader>
       <CardContent>
-        <MapContainer 
-            center={position} 
-            zoom={13} 
+        <MapContainer
+            key={mapKey} // Add key here
+            center={position}
+            zoom={13}
             scrollWheelZoom={true} // Enabled scroll wheel zoom
             style={{ height: '250px', width: '100%', borderRadius: 'var(--radius)' }}
             className="z-0" // Ensure map container has a z-index if needed
