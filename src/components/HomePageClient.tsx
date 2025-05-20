@@ -8,7 +8,7 @@ import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudRain, Cloudy, RefreshCw, MapPin } from 'lucide-react';
+import { Thermometer, Droplets, Wind, Cloudy, RefreshCw } from 'lucide-react'; // Removed CloudRain (was for PM1), MapPin
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 import { LocationDisplay } from '@/components/LocationDisplay'; // Import LocationDisplay
@@ -39,14 +39,17 @@ export function HomePageClient() {
       }
       setHistoricalData(historical || []);
 
+      // Prioritize location from the feed data itself (fields 3 & 4)
       if (latest?.latitude && latest?.longitude && typeof latest.latitude === 'number' && typeof latest.longitude === 'number') {
         setLocation({ latitude: latest.latitude, longitude: latest.longitude });
         setIsLocationLoading(false);
       } 
+      // Fallback to ThingSpeak channel's general location metadata
       else if (tsChannelLocationInfo && typeof tsChannelLocationInfo.latitude === 'number' && typeof tsChannelLocationInfo.longitude === 'number') {
         setLocation(tsChannelLocationInfo);
         setIsLocationLoading(false);
       } 
+      // Fallback to device's GPS
       else if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -84,7 +87,7 @@ export function HomePageClient() {
         description: "Could not fetch air quality data. Please try again later.",
         variant: "destructive",
       });
-      setIsLocationLoading(false);
+      setIsLocationLoading(false); 
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +139,7 @@ export function HomePageClient() {
             />
             <AirQualityCard 
               title="CO₂" 
-              value={latestReading.co2.toFixed(0)}
+              value={latestReading.co2.toFixed(0)} // from field5 (MQ135)
               unit="ppm"
               icon={Wind}
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
@@ -144,21 +147,21 @@ export function HomePageClient() {
             />
             <AirQualityCard 
               title="PM2.5" 
-              value={latestReading.pm2_5.toFixed(1)}
+              value={latestReading.pm2_5.toFixed(1)} // from field6
               unit="μg/m³" 
-              icon={CloudRain} 
+              icon={Cloudy} // Using Cloudy, as CloudRain was for PM1
               color="text-indigo-500"
               description="Particulate Matter <2.5μm"
             />
             <AirQualityCard 
               title="PM10" 
-              value={latestReading.pm10.toFixed(1)}
+              value={latestReading.pm10.toFixed(1)} // from field7
               unit="μg/m³" 
               icon={Cloudy} 
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
-            <LocationDisplay location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2" />
+             <LocationDisplay location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2" />
           </>
         ) : (
           !isLoading && <p className="col-span-full text-center text-muted-foreground">Could not load current air quality data. Please check your ThingSpeak configuration.</p>
