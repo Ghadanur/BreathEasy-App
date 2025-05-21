@@ -8,10 +8,20 @@ import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, Cloudy, RefreshCw } from 'lucide-react'; // Removed CloudRain (was for PM1), MapPin
+import { Thermometer, Droplets, Wind, Cloudy, RefreshCw, CloudFog } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { LocationDisplay } from '@/components/LocationDisplay'; // Import LocationDisplay
+import dynamic from 'next/dynamic';
+
+// Dynamically import LocationMap as it's client-side only
+const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod => mod.LocationMap), {
+  ssr: false,
+  loading: () => (
+    <div className="col-span-1 sm:col-span-2 h-[280px] flex items-center justify-center bg-muted/50 rounded-md shadow-lg">
+      <LoadingSpinner text="Loading map..." />
+    </div>
+  ),
+});
 
 export function HomePageClient() {
   const [latestReading, setLatestReading] = useState<AirQualityReading | null>(null);
@@ -143,13 +153,13 @@ export function HomePageClient() {
               unit="ppm"
               icon={Wind}
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
-              description="Carbon Dioxide Level (MQ135)"
+              description="Carbon Dioxide Level"
             />
             <AirQualityCard 
               title="PM2.5" 
               value={latestReading.pm2_5.toFixed(1)} // from field6
               unit="μg/m³" 
-              icon={Cloudy} // Using Cloudy, as CloudRain was for PM1
+              icon={CloudFog} 
               color="text-indigo-500"
               description="Particulate Matter <2.5μm"
             />
@@ -161,7 +171,7 @@ export function HomePageClient() {
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
-             <LocationDisplay location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2" />
+            <LocationMap location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2 xl:col-span-2" />
           </>
         ) : (
           !isLoading && <p className="col-span-full text-center text-muted-foreground">Could not load current air quality data. Please check your ThingSpeak configuration.</p>
