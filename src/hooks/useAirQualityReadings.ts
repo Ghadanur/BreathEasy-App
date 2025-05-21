@@ -5,18 +5,27 @@ import { ref, onValue, query, orderByKey, limitToLast } from 'firebase/database'
 import type { AirQualityReading, FirebaseRawReading } from '@/types';
 import { parse, formatISO } from 'date-fns';
 
-// Helper function to parse Firebase timestamp string ("YYYY-MM-DD HH:MM:SS") to ISO string
+// Helper function to parse Firebase timestamp string ("YYYY-MM-DD HH-MM-SS") to ISO string
 function parseFirebaseTimestampToISO(timestampStr: string): string {
   try {
-    // Assuming timestampStr is "YYYY-MM-DD HH:MM:SS" (potentially with hyphens in time part from ESP code)
-    // Standardize the time part to use colons if it has hyphens
-    const standardizedTimestampStr = timestampStr.replace(/(\d{2})-(\d{2})-(\d{2})$/, '$1:$2:$3');
-    const dateObj = parse(standardizedTimestampStr, 'yyyy-MM-dd HH:mm:ss', new Date());
-    return formatISO(dateObj);
+    // timestampStr from Firebase is "YYYY-MM-DD HH-MM-SS" (time part has hyphens)
+    // We need to convert "HH-MM-SS" to "HH:MM:SS" for date-fns parsing.
+    const parts = timestampStr.split(' ');
+    if (parts.length === 2) {
+      const datePart = parts[0]; // "YYYY-MM-DD"
+      const timePartWithHyphens = parts[1]; // "HH-MM-SS"
+      const timePartWithColons = timePartWithHyphens.replace(/-/g, ':'); // "HH:MM:SS"
+      const standardizedTimestampStr = `${datePart} ${timePartWithColons}`;
+      const dateObj = parse(standardizedTimestampStr, 'yyyy-MM-dd HH:mm:ss', new Date());
+      return formatISO(dateObj);
+    }
+    // Fallback for unexpected format
+    console.warn("Unexpected Firebase timestamp format in hook:", timestampStr);
+    return formatISO(new Date());
   } catch (error) {
     console.error("Error parsing Firebase timestamp in hook:", timestampStr, error);
     // Fallback to current time if parsing fails
-    return formatISO(new Date()); 
+    return formatISO(new Date());
   }
 }
 
@@ -26,7 +35,9 @@ export function useAirQualityReadings(limit: number = 96) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const readingsNodePath = 'AirQuality/readings';
+    // Corrected path: ESP32 writes to /AirQuality/readingsYYYY-MM-DD_HH-MM-SS
+    // So we query 'AirQuality' and order by key.
+    const readingsNodePath = 'AirQuality';
     const readingsQuery = query(ref(database, readingsNodePath), orderByKey(), limitToLast(limit));
 
     const unsubscribe = onValue(readingsQuery, (snapshot) => {
@@ -34,10 +45,11 @@ export function useAirQualityReadings(limit: number = 96) {
         const data = snapshot.val();
         if (data) {
           const parsedReadings = Object.entries(data).map(([key, rawValue]) => {
+            // key here will be like "readings2024-07-23_10-15-00"
             const rawReading = rawValue as FirebaseRawReading;
             try {
               const reading: AirQualityReading = {
-                id: key, // Firebase key e.g., "2024-07-23_10-15-00"
+                id: key, 
                 timestamp: rawReading.timestamp ? parseFirebaseTimestampToISO(rawReading.timestamp) : formatISO(new Date()),
                 temperature: rawReading.temp?.value ?? 0,
                 humidity: rawReading.humidity?.value ?? 0,
@@ -54,8 +66,6 @@ export function useAirQualityReadings(limit: number = 96) {
             }
           }).filter(Boolean) as AirQualityReading[];
           
-          // limitToLast with orderByKey returns data sorted ascending by key.
-          // This means readings are oldest to newest, which is good for charts.
           setReadings(parsedReadings);
         } else {
           setReadings([]);
@@ -72,8 +82,8 @@ export function useAirQualityReadings(limit: number = 96) {
       setLoading(false);
     });
 
-    return () => unsubscribe(); // Cleanup subscription on component unmount
-  }, [limit]); // Re-subscribe if the limit changes
+    return () => unsubscribe();
+  }, [limit]);
 
   return { readings, loading, error };
 }
