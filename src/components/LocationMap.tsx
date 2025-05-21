@@ -7,7 +7,8 @@ import { MapPin, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import type L from 'leaflet';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface LocationMapProps {
   location: LocationData | null;
@@ -15,37 +16,30 @@ interface LocationMapProps {
   className?: string;
 }
 
-// Default icon for Leaflet markers (resolves potential issues with default icon paths)
-const createDefaultIcon = (): L.Icon | undefined => {
-  if (typeof window !== 'undefined') {
-    // Ensure Leaflet is only required on the client-side
-    const LModule = require('leaflet') as typeof L;
-    return new LModule.Icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41],
-    });
-  }
-  return undefined;
-};
-
-
-export function LocationMap({ location, isLoading, className }: LocationMapProps) {
+function LocationMapComponent({ location, isLoading, className }: LocationMapProps) {
   const cardBaseClass = "shadow-lg";
   const mapInstanceRef = useRef<L.Map | null>(null);
-  // Generate a unique key for the map. Changes when location data changes.
-  const mapKey = location ? `map-${location.latitude}-${location.longitude}` : 'map-loading-or-no-location';
-  
-  // Create icon instance. This will be undefined on SSR.
-  const defaultIcon = createDefaultIcon();
+  const [leafletIcon, setLeafletIcon] = useState<L.Icon | undefined>(undefined);
 
   useEffect(() => {
-    // Cleanup function for the Leaflet map instance
-    // This effect runs when mapKey changes, or when the component unmounts.
+    // Create icon on client mount
+    if (typeof window !== 'undefined') {
+        const LModule = require('leaflet') as typeof L;
+         setLeafletIcon(new LModule.Icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
+        }));
+    }
+  }, []); // Empty dependency array ensures this runs once on mount
+
+  const mapKey = location ? `map-${location.latitude}-${location.longitude}` : 'map-loading-or-no-location';
+  
+  useEffect(() => {
     const currentMap = mapInstanceRef.current;
     return () => {
       if (currentMap) {
@@ -53,7 +47,7 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
         mapInstanceRef.current = null;
       }
     };
-  }, [mapKey]); // Depend on mapKey to re-run cleanup when the underlying map should change
+  }, [mapKey]); 
 
   if (isLoading) {
     return (
@@ -64,7 +58,7 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
         </CardHeader>
         <CardContent>
           <div className="h-[200px] flex items-center justify-center bg-muted/50 rounded-md">
-            <p className="text-sm text-muted-foreground">Fetching location...</p>
+            <LoadingSpinner text="Loading map..." />
           </div>
         </CardContent>
       </Card>
@@ -96,10 +90,8 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
         <MapPin className="h-6 w-6 text-accent" />
       </CardHeader>
       <CardContent>
-        {/* Keying the wrapper div as well */}
         <div key={`map-wrapper-${mapKey}`} className="h-[200px] rounded-md overflow-hidden">
-          {/* Ensure MapContainer only renders on client AND when defaultIcon is ready */}
-          {typeof window !== 'undefined' && defaultIcon && (
+          {typeof window !== 'undefined' && leafletIcon ? (
             <MapContainer
               id={mapKey} 
               key={mapKey} 
@@ -116,7 +108,7 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <Marker position={position} icon={defaultIcon}>
+              <Marker position={position} icon={leafletIcon}>
                 <Popup>
                   Lat: {location.latitude.toFixed(4)}, Lon: {location.longitude.toFixed(4)} <br />
                   {location.address && <>{location.address}<br /></>}
@@ -124,6 +116,10 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
                 </Popup>
               </Marker>
             </MapContainer>
+          ) : (
+            <div className="h-full flex items-center justify-center bg-muted/50 rounded-md">
+              <LoadingSpinner text="Initializing map resources..." />
+            </div>
           )}
         </div>
         {location.address && <p className="text-xs text-muted-foreground pt-2">{location.address}</p>}
@@ -132,4 +128,4 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
   );
 }
 
-export default LocationMap;
+export default LocationMapComponent; // Default export
