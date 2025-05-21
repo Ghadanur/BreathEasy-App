@@ -3,63 +3,55 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { AirQualityReading, LocationData } from '@/types';
-import { fetchLatestAirQuality, fetchHistoricalAirQuality } from '@/lib/airQualityService';
+import { fetchLatestAirQuality, fetchHistoricalAirQuality } from '@/lib/airQualityService'; // Updated service
 import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, Cloudy, RefreshCw, CloudFog } from 'lucide-react';
+import { Thermometer, Droplets, Wind, Cloudy, RefreshCw, CloudFog, MapPin } from 'lucide-react'; // Added MapPin
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import dynamic from 'next/dynamic';
-
-// Dynamically import LocationMap as it's client-side only
-const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod => mod.LocationMap), {
-  ssr: false,
-  loading: () => (
-    <div className="col-span-1 sm:col-span-2 h-[280px] flex items-center justify-center bg-muted/50 rounded-md shadow-lg">
-      <LoadingSpinner text="Loading map..." />
-    </div>
-  ),
-});
+import { LocationDisplay } from './LocationDisplay'; // Using text display for now
 
 export function HomePageClient() {
   const [latestReading, setLatestReading] = useState<AirQualityReading | null>(null);
   const [historicalData, setHistoricalData] = useState<AirQualityReading[]>([]);
   const [location, setLocation] = useState<LocationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLocationLoading, setIsLocationLoading] = useState(true);
+  const [isLocationLoading, setIsLocationLoading] = useState(true); // Still useful for GPS fallback
   const { toast } = useToast();
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    setIsLocationLoading(true);
+    setIsLocationLoading(true); // Reset for each load attempt
     try {
-      const { reading: latest, channelLocation: tsChannelLocationInfo } = await fetchLatestAirQuality();
-      const historical = await fetchHistoricalAirQuality(96);
+      // fetchLatestAirQuality now returns an object { reading: AirQualityReading | null, channelLocation: LocationData | null }
+      const { reading: latest, channelLocation: firebaseLocation } = await fetchLatestAirQuality();
+      const historical = await fetchHistoricalAirQuality(96); // Fetch last 96 readings
       
       if (latest) {
         setLatestReading(latest);
       } else {
         toast({
           title: "Warning",
-          description: "Could not fetch the latest air quality data. Displaying fallback or no data.",
+          description: "Could not fetch the latest air quality data from Firebase. Displaying fallback or no data.",
           variant: "default",
         });
       }
       setHistoricalData(historical || []);
 
-      // Prioritize location from the feed data itself (fields 3 & 4)
-      if (latest?.latitude && latest?.longitude && typeof latest.latitude === 'number' && typeof latest.longitude === 'number') {
+      // Location logic:
+      // 1. Prioritize location from the latest Firebase reading itself
+      if (latest?.latitude && latest?.longitude) {
         setLocation({ latitude: latest.latitude, longitude: latest.longitude });
         setIsLocationLoading(false);
-      } 
-      // Fallback to ThingSpeak channel's general location metadata
-      else if (tsChannelLocationInfo && typeof tsChannelLocationInfo.latitude === 'number' && typeof tsChannelLocationInfo.longitude === 'number') {
-        setLocation(tsChannelLocationInfo);
+      }
+      // 2. Fallback to channelLocation from Firebase service (if it was derived differently, though usually same as above)
+      else if (firebaseLocation) {
+        setLocation(firebaseLocation);
         setIsLocationLoading(false);
-      } 
-      // Fallback to device's GPS
+      }
+      // 3. Fallback to device's GPS if no location from Firebase
       else if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -75,16 +67,17 @@ export function HomePageClient() {
             }
             toast({
               title: error.code === error.PERMISSION_DENIED ? "Location Permission Denied" : "Location Error",
-              description: error.code === error.PERMISSION_DENIED ? "Location access was denied. Some features might be limited." : "Could not retrieve device location. Some features might be limited.",
+              description: error.code === error.PERMISSION_DENIED ? "Location access was denied. Some features might be limited." : "Could not retrieve device location. Firebase also provided no location. Some features might be limited.",
               variant: "default",
             });
-            setIsLocationLoading(false);
+            setIsLocationLoading(false); // Stop loading even on error
           }
         );
       } else {
+        // No Firebase location and no GPS capability
         toast({
           title: "Location Not Available",
-          description: "Could not retrieve location from any source.",
+          description: "Could not retrieve location from Firebase or device GPS.",
           variant: "default",
         });
         setIsLocationLoading(false);
@@ -97,9 +90,10 @@ export function HomePageClient() {
         description: "Could not fetch air quality data. Please try again later.",
         variant: "destructive",
       });
+      // Ensure loading states are reset even on generic catch
       setIsLocationLoading(false); 
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Overall data loading
     }
   }, [toast]);
   
@@ -111,7 +105,7 @@ export function HomePageClient() {
   if (isLoading && !latestReading && historicalData.length === 0 && isLocationLoading) { 
     return (
       <div className="container mx-auto p-4 min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <LoadingSpinner text="Loading Air Quality Data..." size="lg" />
+        <LoadingSpinner text="Loading Air Quality Data from Firebase..." size="lg" />
       </div>
     );
   }
@@ -137,7 +131,7 @@ export function HomePageClient() {
               unit="°C" 
               icon={Thermometer}
               color="text-orange-500"
-              description="Current ambient temperature"
+              description="Ambient temperature" // Updated description from Firebase if available, else default
             />
             <AirQualityCard 
               title="Humidity" 
@@ -145,19 +139,19 @@ export function HomePageClient() {
               unit="%" 
               icon={Droplets}
               color="text-blue-500"
-              description="Relative humidity level"
+              description="Relative humidity"
             />
             <AirQualityCard 
               title="CO₂" 
-              value={latestReading.co2.toFixed(0)} // from field5 (MQ135)
+              value={latestReading.co2.toFixed(0)} 
               unit="ppm"
-              icon={Wind}
+              icon={Wind} // Icon for CO2
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
               description="Carbon Dioxide Level"
             />
-            <AirQualityCard 
+             <AirQualityCard 
               title="PM2.5" 
-              value={latestReading.pm2_5.toFixed(1)} // from field6
+              value={latestReading.pm2_5.toFixed(1)} // pm2_5 from Firebase 'pm25.value'
               unit="μg/m³" 
               icon={CloudFog} 
               color="text-indigo-500"
@@ -165,16 +159,17 @@ export function HomePageClient() {
             />
             <AirQualityCard 
               title="PM10" 
-              value={latestReading.pm10.toFixed(1)} // from field7
+              value={latestReading.pm10.toFixed(1)} // pm10 from Firebase 'pm10.value'
               unit="μg/m³" 
               icon={Cloudy} 
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
-            <LocationMap location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2 xl:col-span-2" />
+            {/* Using LocationDisplay for text-based location for now */}
+            <LocationDisplay location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2 xl:col-span-2" />
           </>
         ) : (
-          !isLoading && <p className="col-span-full text-center text-muted-foreground">Could not load current air quality data. Please check your ThingSpeak configuration.</p>
+          !isLoading && <p className="col-span-full text-center text-muted-foreground">Could not load current air quality data from Firebase. Please check your configuration and data source.</p>
         )}
       </section>
       
@@ -189,7 +184,7 @@ export function HomePageClient() {
             <HistoricalDataChart data={historicalData} dataKey="pm10" title="PM10 Trend (μg/m³)" color="hsl(var(--accent))" unit="μg/m³"/>
           </div>
         ) : (
-           !isLoading && <p className="text-center text-muted-foreground">No historical data found or failed to load. Please check your ThingSpeak configuration.</p>
+           !isLoading && <p className="text-center text-muted-foreground">No historical data found or failed to load from Firebase. Please check your configuration and data source.</p>
         )}
       </section>
 
@@ -197,13 +192,13 @@ export function HomePageClient() {
         <PersonalizedTips 
           latestReading={latestReading} 
           locationDataFromFeed={latestReading && latestReading.latitude && latestReading.longitude ? {latitude: latestReading.latitude, longitude: latestReading.longitude} : null} 
-          initialLocation={location} 
+          initialLocation={location} // This is the location resolved from Firebase or GPS
         />
       </section>
 
       <footer className="text-center py-8 text-sm text-muted-foreground">
         <p>&copy; {new Date().getFullYear()} BreatheEasy Mobile. All rights reserved.</p>
-        <p>Air quality data is for informational purposes only.</p>
+        <p>Air quality data is for informational purposes only. Powered by Firebase.</p>
       </footer>
     </div>
   );

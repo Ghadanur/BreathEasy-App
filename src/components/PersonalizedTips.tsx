@@ -14,8 +14,8 @@ import { ScrollArea } from './ui/scroll-area';
 
 interface PersonalizedTipsProps {
   latestReading: AirQualityReading | null;
-  locationDataFromFeed: LocationData | null; // Specific location from the latest feed, if available
-  initialLocation: LocationData | null; // General location (channel or GPS)
+  locationDataFromFeed: LocationData | null; // Specific location from the latest feed (Firebase reading)
+  initialLocation: LocationData | null; // General location (resolved from Firebase or GPS fallback)
 }
 
 export function PersonalizedTips({ latestReading, locationDataFromFeed, initialLocation }: PersonalizedTipsProps) {
@@ -28,24 +28,36 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
   useEffect(() => {
     // Prioritize location from feed, then initialLocation (which could be channel's or GPS)
     const bestLocation = locationDataFromFeed || initialLocation;
-    if (bestLocation?.address) {
+    if (bestLocation?.address) { // If we had reverse geocoding for address
       setUserLocationInput(bestLocation.address);
-    } else if (bestLocation) {
+    } else if (bestLocation?.latitude && bestLocation?.longitude) {
       setUserLocationInput(`${bestLocation.latitude.toFixed(4)}, ${bestLocation.longitude.toFixed(4)}`);
+    } else {
+        setUserLocationInput(''); // Clear if no location data
     }
   }, [locationDataFromFeed, initialLocation]);
 
   const fetchTips = useCallback(async () => {
     if (!latestReading) {
-      toast({ title: "Missing Data", description: "Current air quality data is not available.", variant: "destructive" });
+      toast({ title: "Missing Data", description: "Current air quality data is not available to generate tips.", variant: "destructive" });
       return;
     }
     
-    const bestLocationForTips = locationDataFromFeed || initialLocation;
-    if (!userLocationInput && !bestLocationForTips) {
-      toast({ title: "Missing Location", description: "Please provide your location or ensure it's available from the data feed.", variant: "destructive" });
-      return;
+    // Determine the best location string to send to the AI
+    let locationStringForAI = "Unknown Location";
+    if (userLocationInput) {
+        locationStringForAI = userLocationInput;
+    } else {
+        const bestDeviceLocation = locationDataFromFeed || initialLocation;
+        if (bestDeviceLocation?.latitude && bestDeviceLocation?.longitude) {
+            locationStringForAI = `${bestDeviceLocation.latitude.toFixed(4)}, ${bestDeviceLocation.longitude.toFixed(4)}`;
+        }
     }
+    if (locationStringForAI === "Unknown Location" && !userLocationInput) {
+         toast({ title: "Missing Location", description: "Please provide your location or ensure it's available from the data feed to get tips.", variant: "destructive" });
+         return;
+    }
+
 
     setIsLoading(true);
     setError(null);
@@ -53,13 +65,12 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
 
     try {
       const inputData = {
-        location: userLocationInput || (bestLocationForTips ? `${bestLocationForTips.latitude}, ${bestLocationForTips.longitude}`: "Unknown Location"),
+        location: locationStringForAI,
         temperature: latestReading.temperature,
         humidity: latestReading.humidity,
-        co2Level: latestReading.co2,
-        // particulateMatterPM1 removed
-        particulateMatterPM2_5: latestReading.pm2_5,
-        particulateMatterPM10: latestReading.pm10,
+        co2Level: latestReading.co2, // Mapped from Firebase co2.value
+        particulateMatterPM2_5: latestReading.pm2_5, // Mapped from Firebase pm25.value
+        particulateMatterPM10: latestReading.pm10, // Mapped from Firebase pm10.value
       };
       
       const result: PersonalizedAirQualityTipsOutput = await getPersonalizedAirQualityTips(inputData);
@@ -89,7 +100,7 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
           Personalized Air Quality Tips
         </CardTitle>
         <CardDescription>
-          Get AI-powered suggestions to improve your air quality based on current conditions and your location.
+          Get AI-powered suggestions to improve your air quality based on current conditions and your location. Data from Firebase.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -101,7 +112,7 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
             value={userLocationInput}
             onChange={(e) => setUserLocationInput(e.target.value)}
             placeholder={ (locationDataFromFeed || initialLocation) ? 
-                          ((locationDataFromFeed || initialLocation)?.address || `${(locationDataFromFeed || initialLocation)?.latitude.toFixed(4)}, ${(locationDataFromFeed || initialLocation)?.longitude.toFixed(4)}`) 
+                          (((locationDataFromFeed || initialLocation)?.address) || `${(locationDataFromFeed || initialLocation)?.latitude?.toFixed(4)}, ${(locationDataFromFeed || initialLocation)?.longitude?.toFixed(4)}`) 
                           : "Enter your location"}
             disabled={isLoading}
           />

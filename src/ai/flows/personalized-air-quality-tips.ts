@@ -6,18 +6,18 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+// Matches AirQualityReading structure after parsing from Firebase
 const PersonalizedAirQualityTipsInputSchema = z.object({
-  location: z.string().describe('The user\'s current location.'),
+  location: z.string().describe('The user\'s current location (e.g., city or lat,lng).'),
   temperature: z.number().describe('The current temperature in Celsius.'),
   humidity: z.number().describe('The current humidity percentage.'),
-  co2Level: z.number().describe('The current CO2 level in ppm (from MQ135 sensor, ThingSpeak field5).'),
-  // particulateMatterPM1 removed as per new field mapping
+  co2Level: z.number().describe('The current CO2 level in ppm (from Firebase co2.value).'),
   particulateMatterPM2_5: z
     .number()
-    .describe('The current PM2.5 particulate matter concentration in μg/m³ (ThingSpeak field6).'),
+    .describe('The current PM2.5 particulate matter concentration in μg/m³ (from Firebase pm25.value).'),
   particulateMatterPM10: z
     .number()
-    .describe('The current PM10 particulate matter concentration in μg/m³ (ThingSpeak field7).'),
+    .describe('The current PM10 particulate matter concentration in μg/m³ (from Firebase pm10.value).'),
 });
 
 export type PersonalizedAirQualityTipsInput = z.infer<

@@ -1,159 +1,128 @@
 
-import type { AirQualityReading, LocationData } from '@/types';
-import { formatISO } from 'date-fns';
+import type { AirQualityReading, LocationData, FirebaseRawReading } from '@/types';
+import { database } from './firebase'; // Firebase setup
+import { ref, query, orderByChild, limitToLast, get, orderByKey } from 'firebase/database';
+import { parse, formatISO } from 'date-fns';
 
-// Environment variables
-const THINGSPEAK_CHANNEL_ID = process.env.NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID;
-const THINGSPEAK_READ_API_KEY = process.env.NEXT_PUBLIC_THINGSPEAK_READ_API_KEY;
-
-const BASE_URL = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL_ID}`;
-
-// ThingSpeak Field Mapping (based on user's provided list):
-// field1: Temperature (°C)
-// field2: Humidity (%)
-// field3: Latitude
-// field4: Longitude
-// field5: CO₂ (ppm)
-// field6: PM2.5 (μg/m³)
-// field7: PM10 (μg/m³)
-// field8: Not used for these primary readings
-
-interface ThingSpeakFeed {
-  created_at: string;
-  entry_id: number;
-  field1: string | null; // Temperature
-  field2: string | null; // Humidity
-  field3: string | null; // Latitude
-  field4: string | null; // Longitude
-  field5: string | null; // CO₂
-  field6: string | null; // PM2.5
-  field7: string | null; // PM10
-  field8: string | null; // Potentially other data, ignored for this app's core readings
-}
-
-interface ThingSpeakChannel {
-  id: number;
-  name: string;
-  latitude: string | null;
-  longitude: string | null;
-  field1: string; // Corresponds to Temperature
-  field2: string; // Corresponds to Humidity
-  field3: string; // Corresponds to Latitude
-  field4: string; // Corresponds to Longitude
-  field5: string; // Corresponds to CO₂
-  field6: string; // Corresponds to PM2.5
-  field7: string; // Corresponds to PM10
-  // field8 label might exist but data is not used for core readings
-  created_at: string;
-  updated_at: string;
-  last_entry_id: number;
-}
-
-interface ThingSpeakResponse {
-  channel: ThingSpeakChannel;
-  feeds: ThingSpeakFeed[];
-}
+const READINGS_PATH = '/AirQuality'; // Base path in your RTDB, actual readings under e.g. /AirQuality/readings...
 
 export interface FetchLatestAirQualityResult {
   reading: AirQualityReading | null;
-  channelLocation: LocationData | null; // General location from channel settings
+  channelLocation: LocationData | null; // For consistency, though it comes from the reading itself now
 }
 
-function parseFeedToAirQualityReading(feed: ThingSpeakFeed): AirQualityReading {
-  const reading: AirQualityReading = {
-    id: feed.entry_id.toString(),
-    timestamp: formatISO(new Date(feed.created_at)),
-    temperature: parseFloat(feed.field1 || '0'),
-    humidity: parseFloat(feed.field2 || '0'),
-    co2: parseFloat(feed.field5 || '0'), 
-    pm2_5: parseFloat(feed.field6 || '0'),
-    pm10: parseFloat(feed.field7 || '0'),
-  };
-
-  // Parse latitude and longitude from feed if available
-  const lat = parseFloat(feed.field3 || '');
-  const lon = parseFloat(feed.field4 || '');
-
-  if (!isNaN(lat) && lat !== 0) {
-    reading.latitude = lat;
+function parseFirebaseTimestamp(timestampStr: string): string {
+  // Firebase timestamp is "YYYY-MM-DD HH:MM:SS"
+  // Need to convert to a format that Date constructor or date-fns parse can handle reliably
+  // 'yyyy-MM-dd HH:mm:ss' is a common format date-fns parse can handle
+  try {
+    const dateObj = parse(timestampStr, 'yyyy-MM-dd HH:mm:ss', new Date());
+    return formatISO(dateObj);
+  } catch (error) {
+    console.error("Error parsing Firebase timestamp:", timestampStr, error);
+    return formatISO(new Date()); // Fallback to now
   }
-  if (!isNaN(lon) && lon !== 0) {
-    reading.longitude = lon;
+}
+
+function parseFirebaseReading(key: string, data: FirebaseRawReading): AirQualityReading | null {
+  if (!data || typeof data !== 'object') {
+    console.warn(`Invalid data for key ${key}:`, data);
+    return null;
   }
-  
-  return reading;
+  try {
+    const reading: AirQualityReading = {
+      id: key.replace('readings',''), // Clean up the key if it includes "readings" prefix
+      timestamp: data.timestamp ? parseFirebaseTimestamp(data.timestamp) : formatISO(new Date()),
+      temperature: data.temp?.value ?? 0,
+      humidity: data.humidity?.value ?? 0,
+      co2: data.co2?.value ?? 0,
+      pm2_5: data.pm25?.value ?? 0, // Firebase has 'pm25', our type uses 'pm2_5'
+      pm10: data.pm10?.value ?? 0,
+      latitude: data.location?.lat ?? undefined,
+      longitude: data.location?.lng ?? undefined,
+    };
+    return reading;
+  } catch (error) {
+    console.error(`Error parsing Firebase reading for key ${key}:`, error, "Data:", data);
+    return null;
+  }
 }
 
 export async function fetchLatestAirQuality(): Promise<FetchLatestAirQualityResult> {
   const result: FetchLatestAirQualityResult = { reading: null, channelLocation: null };
 
-  if (!THINGSPEAK_CHANNEL_ID || !THINGSPEAK_READ_API_KEY) {
-    console.error("ThingSpeak environment variables NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID or NEXT_PUBLIC_THINGSPEAK_READ_API_KEY are not configured. Please set them in your .env file.");
+  if (!process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL) {
+    console.error("Firebase Database URL is not configured. Please set NEXT_PUBLIC_FIREBASE_DATABASE_URL in your .env file.");
     return result;
   }
 
-  const url = `${BASE_URL}/feeds.json?api_key=${THINGSPEAK_READ_API_KEY}&results=1`;
-
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`ThingSpeak API error: ${response.status} ${response.statusText}`);
-      const errorBody = await response.text();
-      console.error("Error body:", errorBody);
-      return result;
-    }
-    const data = await response.json() as ThingSpeakResponse;
+    const readingsNodePath = `${READINGS_PATH}/readings`; // e.g. /AirQuality/readings
+    const readingsRef = ref(database, readingsNodePath);
+    // Data is keyed by "readings" + "YYYY-MM-DD_HH-MM-SS" (e.g. readings2024-07-15_10-30-45)
+    // Order by key and get the last one
+    const q = query(readingsRef, orderByKey(), limitToLast(1));
+    const snapshot = await get(q);
 
-    if (data.feeds && data.feeds.length > 0) {
-      result.reading = parseFeedToAirQualityReading(data.feeds[0]);
+    if (snapshot.exists()) {
+      snapshot.forEach((childSnapshot) => { // Should only be one child
+        const key = childSnapshot.key;
+        const data = childSnapshot.val() as FirebaseRawReading;
+        if (key && data) {
+          const parsed = parseFirebaseReading(key, data);
+          if (parsed) {
+            result.reading = parsed;
+            if (parsed.latitude && parsed.longitude) {
+              result.channelLocation = { latitude: parsed.latitude, longitude: parsed.longitude };
+            }
+          }
+        }
+      });
+    } else {
+      console.warn("No Firebase data found at path:", readingsNodePath);
     }
-
-    // Set channelLocation from the feed's lat/lon first if available in the reading
-    if (result.reading?.latitude && result.reading?.longitude) {
-      result.channelLocation = {
-        latitude: result.reading.latitude,
-        longitude: result.reading.longitude,
-      };
-    } 
-    // Fallback to channel's general latitude/longitude if feed doesn't have specific lat/lon
-    else if (data.channel && data.channel.latitude && data.channel.longitude) {
-      const channelLat = parseFloat(data.channel.latitude);
-      const channelLon = parseFloat(data.channel.longitude);
-      if (!isNaN(channelLat) && !isNaN(channelLon) && (channelLat !== 0 || channelLon !== 0)) {
-        result.channelLocation = { latitude: channelLat, longitude: channelLon };
-      }
-    }
-    
     return result;
   } catch (error) {
-    console.error("Failed to fetch latest air quality data from ThingSpeak:", error);
+    console.error("Failed to fetch latest air quality data from Firebase:", error);
     return result;
   }
 }
 
 export async function fetchHistoricalAirQuality(results: number = 96): Promise<AirQualityReading[]> {
-  if (!THINGSPEAK_CHANNEL_ID || !THINGSPEAK_READ_API_KEY) {
-    console.error("ThingSpeak environment variables NEXT_PUBLIC_THINGSPEAK_CHANNEL_ID or NEXT_PUBLIC_THINGSPEAK_READ_API_KEY are not configured for historical data. Please set them in your .env file.");
+  if (!process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL) {
+    console.error("Firebase Database URL is not configured for historical data. Please set NEXT_PUBLIC_FIREBASE_DATABASE_URL.");
     return [];
   }
-
-  const url = `${BASE_URL}/feeds.json?api_key=${THINGSPEAK_READ_API_KEY}&results=${results}`;
-
+  
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`ThingSpeak API error for historical data: ${response.status} ${response.statusText}`);
-      const errorBody = await response.text();
-      console.error("Error body:", errorBody);
-      return [];
+    const readingsNodePath = `${READINGS_PATH}/readings`;
+    const readingsRef = ref(database, readingsNodePath);
+    const q = query(readingsRef, orderByKey(), limitToLast(results));
+    const snapshot = await get(q);
+
+    const historicalReadings: AirQualityReading[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((childSnapshot) => {
+        const key = childSnapshot.key;
+        const data = childSnapshot.val() as FirebaseRawReading;
+        if (key && data) {
+          const parsed = parseFirebaseReading(key, data);
+          if (parsed) {
+            historicalReadings.push(parsed);
+          }
+        }
+      });
+    } else {
+       console.warn("No historical Firebase data found at path:", readingsNodePath);
     }
-    const data = await response.json() as ThingSpeakResponse;
-    if (data.feeds && data.feeds.length > 0) {
-      return data.feeds.map(parseFeedToAirQualityReading).filter(reading => reading !== null) as AirQualityReading[];
-    }
-    return [];
+    // Firebase returns in ascending order by key, reverse if you want most recent first
+    // However, limitToLast already gets the "last N", which are the most recent.
+    // The order of iteration of snapshot.forEach is ascending by key.
+    // So we might want to reverse it if the chart expects newest first.
+    // Or handle order in chart. For now, return as received.
+    return historicalReadings;
   } catch (error) {
-    console.error("Failed to fetch historical air quality data from ThingSpeak:", error);
+    console.error("Failed to fetch historical air quality data from Firebase:", error);
     return [];
   }
 }
