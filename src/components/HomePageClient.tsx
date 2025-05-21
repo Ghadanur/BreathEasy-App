@@ -8,14 +8,13 @@ import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, Cloudy, CloudFog } from 'lucide-react'; // Removed RefreshCw, MapPin
+import { Thermometer, Droplets, Wind, Cloudy, CloudFog } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-// Removed Button import as refresh button is removed
 import dynamic from 'next/dynamic';
 
 const LocationDisplay = dynamic(() => import('@/components/LocationDisplay').then(mod => mod.LocationDisplay), {
   ssr: false,
-  loading: () => <div className="col-span-1 sm:col-span-2 xl:col-span-2 h-[138px] flex items-center justify-center rounded-lg border bg-card shadow-sm p-6"><LoadingSpinner text="Loading map..." /></div>,
+  loading: () => <div className="col-span-1 sm:col-span-2 xl:col-span-2 h-[138px] flex items-center justify-center rounded-lg border bg-card shadow-sm p-6"><LoadingSpinner text="Loading location..." /></div>,
 });
 
 
@@ -26,21 +25,18 @@ export function HomePageClient() {
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const { toast } = useToast();
 
-  // Derive latestReading (newest) and historicalData (all fetched, oldest to newest)
   const latestReading = readings.length > 0 ? readings[readings.length - 1] : null;
   const historicalData = readings;
 
   useEffect(() => {
     setIsLocationLoading(true);
-    let locationSourceUsed = "none"; // To track if any location source was attempted
+    let locationSourceUsed = "none"; 
 
-    // 1. Prioritize location from the latest Firebase reading itself
     if (latestReading?.latitude && latestReading?.longitude && typeof latestReading.latitude === 'number' && typeof latestReading.longitude === 'number') {
       setLocation({ latitude: latestReading.latitude, longitude: latestReading.longitude });
       setIsLocationLoading(false);
       locationSourceUsed = "firebase_reading";
     } 
-    // 2. Fallback to device's GPS if no location from Firebase reading
     else if (navigator.geolocation) {
       locationSourceUsed = "gps_attempt";
       navigator.geolocation.getCurrentPosition(
@@ -56,7 +52,6 @@ export function HomePageClient() {
           if (error.code !== error.PERMISSION_DENIED) {
             console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
           }
-          // Only show toast if Firebase didn't provide location either
           if (locationSourceUsed !== "firebase_reading") {
             toast({
               title: error.code === error.PERMISSION_DENIED ? "Location Permission Denied" : "Location Error",
@@ -64,14 +59,13 @@ export function HomePageClient() {
               variant: "default",
             });
           }
-          setIsLocationLoading(false); // Stop location loading even on error
+          setIsLocationLoading(false); 
           locationSourceUsed = "gps_error";
         }
       );
     } else {
-      // No Firebase location and no GPS capability
       locationSourceUsed = "gps_unavailable";
-      if (locationSourceUsed !== "firebase_reading") { // Avoid redundant toast if firebase location might still come
+      if (locationSourceUsed !== "firebase_reading") { 
         toast({
           title: "Location Not Available",
           description: "Could not retrieve location from Firebase or device GPS.",
@@ -80,7 +74,6 @@ export function HomePageClient() {
       }
       setIsLocationLoading(false);
     }
-    // If no location source was successfully used and we are not already loading, stop loading.
     if (locationSourceUsed === "none" || (locationSourceUsed === "gps_attempt" && !isLocationLoading)) {
        setIsLocationLoading(false);
     }
@@ -117,7 +110,6 @@ export function HomePageClient() {
         <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-black to-primary bg-clip-text text-transparent font-sans">
           Air Quality Dashboard
         </h1>
-        {/* Refresh button removed as data is now real-time */}
       </div>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
