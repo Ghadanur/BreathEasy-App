@@ -16,10 +16,11 @@ interface LocationMapProps {
 }
 
 // Default icon for Leaflet markers (resolves potential issues with default icon paths)
-const createDefaultIcon = () => {
+const createDefaultIcon = (): L.Icon | undefined => {
   if (typeof window !== 'undefined') {
-    const L = require('leaflet'); // Dynamically import Leaflet on client-side
-    return new L.Icon({
+    // Ensure Leaflet is only required on the client-side
+    const LModule = require('leaflet') as typeof L;
+    return new LModule.Icon({
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
       iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -29,25 +30,30 @@ const createDefaultIcon = () => {
       shadowSize: [41, 41],
     });
   }
-  return undefined; // Or a fallback if necessary, though it shouldn't be used server-side
+  return undefined;
 };
 
 
 export function LocationMap({ location, isLoading, className }: LocationMapProps) {
   const cardBaseClass = "shadow-lg";
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const mapKey = location ? `${location.latitude}-${location.longitude}` : 'loading-map';
+  // Generate a unique key for the map. Changes when location data changes.
+  const mapKey = location ? `map-${location.latitude}-${location.longitude}` : 'map-loading-or-no-location';
+  
+  // Create icon instance. This will be undefined on SSR.
   const defaultIcon = createDefaultIcon();
 
   useEffect(() => {
-    // Cleanup function
+    // Cleanup function for the Leaflet map instance
+    // This effect runs when mapKey changes, or when the component unmounts.
+    const currentMap = mapInstanceRef.current;
     return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+      if (currentMap) {
+        currentMap.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, [mapKey]); // Re-run effect if mapKey changes, ensuring old map is removed
+  }, [mapKey]); // Depend on mapKey to re-run cleanup when the underlying map should change
 
   if (isLoading) {
     return (
@@ -90,31 +96,35 @@ export function LocationMap({ location, isLoading, className }: LocationMapProps
         <MapPin className="h-6 w-6 text-accent" />
       </CardHeader>
       <CardContent>
-        <div className="h-[200px] rounded-md overflow-hidden">
-          <MapContainer
-            id={mapKey} // Explicitly set DOM ID for Leaflet
-            key={mapKey} // React key for reconciliation
-            whenCreated={(map) => { mapInstanceRef.current = map; }}
-            center={position}
-            zoom={13}
-            scrollWheelZoom={false}
-            style={{ height: '100%', width: '100%' }}
-            className="z-0" // Ensure map is behind other UI if necessary
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {defaultIcon && (
-               <Marker position={position} icon={defaultIcon}>
+        {/* Keying the wrapper div as well */}
+        <div key={`map-wrapper-${mapKey}`} className="h-[200px] rounded-md overflow-hidden">
+          {/* Ensure MapContainer only renders on client AND when defaultIcon is ready */}
+          {typeof window !== 'undefined' && defaultIcon && (
+            <MapContainer
+              id={mapKey} 
+              key={mapKey} 
+              center={position}
+              zoom={13}
+              scrollWheelZoom={false}
+              style={{ height: '100%', width: '100%' }}
+              className="z-0"
+              whenCreated={(mapInstance) => {
+                mapInstanceRef.current = mapInstance;
+              }}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker position={position} icon={defaultIcon}>
                 <Popup>
                   Lat: {location.latitude.toFixed(4)}, Lon: {location.longitude.toFixed(4)} <br />
                   {location.address && <>{location.address}<br /></>}
                   Approximate location.
                 </Popup>
               </Marker>
-            )}
-          </MapContainer>
+            </MapContainer>
+          )}
         </div>
         {location.address && <p className="text-xs text-muted-foreground pt-2">{location.address}</p>}
       </CardContent>
