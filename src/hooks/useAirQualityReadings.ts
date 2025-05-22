@@ -35,8 +35,6 @@ export function useAirQualityReadings(limit: number = 96) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Corrected path: ESP32 writes to /AirQuality/readingsYYYY-MM-DD_HH-MM-SS
-    // So we query 'AirQuality' and order by key.
     const readingsNodePath = 'AirQuality';
     const readingsQuery = query(ref(database, readingsNodePath), orderByKey(), limitToLast(limit));
 
@@ -45,19 +43,27 @@ export function useAirQualityReadings(limit: number = 96) {
         const data = snapshot.val();
         if (data) {
           const parsedReadings = Object.entries(data).map(([key, rawValue]) => {
-            // key here will be like "readings2024-07-23_10-15-00"
             const rawReading = rawValue as FirebaseRawReading;
             try {
+              // Robust numeric parsing
+              const tempValue = rawReading.temp?.value;
+              const humValue = rawReading.humidity?.value;
+              const co2Value = rawReading.co2?.value;
+              const pm25Value = rawReading.pm25?.value;
+              const pm10Value = rawReading.pm10?.value;
+              const latValue = rawReading.location?.lat;
+              const lonValue = rawReading.location?.lng;
+
               const reading: AirQualityReading = {
                 id: key, 
                 timestamp: rawReading.timestamp ? parseFirebaseTimestampToISO(rawReading.timestamp) : formatISO(new Date()),
-                temperature: rawReading.temp?.value ?? 0,
-                humidity: rawReading.humidity?.value ?? 0,
-                co2: rawReading.co2?.value ?? 0,
-                pm2_5: rawReading.pm25?.value ?? 0,
-                pm10: rawReading.pm10?.value ?? 0,
-                latitude: rawReading.location?.lat ?? undefined,
-                longitude: rawReading.location?.lng ?? undefined,
+                temperature: (typeof tempValue === 'number' && !isNaN(tempValue)) ? tempValue : 0,
+                humidity: (typeof humValue === 'number' && !isNaN(humValue)) ? humValue : 0,
+                co2: (typeof co2Value === 'number' && !isNaN(co2Value)) ? co2Value : 0,
+                pm2_5: (typeof pm25Value === 'number' && !isNaN(pm25Value)) ? pm25Value : 0,
+                pm10: (typeof pm10Value === 'number' && !isNaN(pm10Value)) ? pm10Value : 0,
+                latitude: (typeof latValue === 'number' && !isNaN(latValue)) ? latValue : undefined,
+                longitude: (typeof lonValue === 'number' && !isNaN(lonValue)) ? lonValue : undefined,
               };
               return reading;
             } catch (parseError) {
