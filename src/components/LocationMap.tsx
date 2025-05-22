@@ -61,10 +61,10 @@ export default function LocationMap({ location, isLoading, className }: Location
       <div key={`map-wrapper-${mapKey}-${isDialog}`} className={cn("rounded-md overflow-hidden", isDialog ? "h-[70vh]" : "h-[200px]")}>
         {typeof window !== 'undefined' && leafletIcon ? (
           <MapContainer
-            key={mapKey} // React key for reconciliation
+            key={mapKey} 
             center={position}
-            zoom={13}
-            scrollWheelZoom={isDialog} // Enable scroll wheel zoom only in dialog
+            zoom={isDialog ? 15 : 13} // Slightly more zoom in dialog
+            scrollWheelZoom={isDialog} 
             style={{ height: '100%', width: '100%' }}
           >
             <TileLayer
@@ -108,7 +108,8 @@ export default function LocationMap({ location, isLoading, className }: Location
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl h-[85vh] flex flex-col p-4">
         <DialogHeader className="pb-2">
-          <ShadDialogTitle className="text-lg font-semibold text-white">Sensor Location</ShadDialogTitle>
+          {/* Removed text-white to use default dialog title color */}
+          <ShadDialogTitle className="text-lg font-semibold">Sensor Location</ShadDialogTitle>
         </DialogHeader>
         <div className="flex-grow">
           {renderMapContent(true)}
@@ -124,3 +125,4 @@ interface LocationMapProps {
   isLoading: boolean;
   className?: string;
 }
+
