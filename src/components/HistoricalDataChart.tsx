@@ -5,31 +5,25 @@ import type { AirQualityReading } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, BarChart, Bar } from 'recharts'; // ResponsiveContainer removed as ChartContainer handles it
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'; // ResponsiveContainer removed as ChartContainer handles it
 import { format, parseISO } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-// Button and Maximize2 removed as they are no longer needed for the expand button
-// import { Button } from '@/components/ui/button';
-// import { Maximize2 } from 'lucide-react';
-// useIsMobile hook removed as the dialog is now for all devices
-// import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 interface HistoricalDataChartProps {
   data: AirQualityReading[];
   dataKey: keyof AirQualityReading;
   title: string;
-  chartType?: 'line' | 'bar';
+  // chartType is no longer used, defaults to line chart
   color?: string; // e.g., "hsl(var(--chart-1))"
   unit?: string;
 }
 
-export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', color = "hsl(var(--chart-1))", unit }: HistoricalDataChartProps) {
-  // const isMobile = useIsMobile(); // Removed
+export function HistoricalDataChart({ data, dataKey, title, color = "hsl(var(--chart-1))", unit }: HistoricalDataChartProps) {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="shadow-lg">
+      <Card className="shadow-lg overflow-hidden"> {/* Added overflow-hidden here */}
         <CardHeader>
           <CardTitle>{title}</CardTitle>
         </CardHeader>
@@ -42,9 +36,9 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
 
   const formattedData = data.map(item => ({
     ...item,
-    fullTimestamp: format(parseISO(item.timestamp), 'MMM dd, yyyy HH:mm'), 
-    timestamp: format(parseISO(item.timestamp), 'HH:mm'), 
-    value: item[dataKey]
+    fullTimestamp: item.timestamp ? format(parseISO(item.timestamp), 'MMM dd, yyyy HH:mm') : 'N/A', 
+    timestamp: item.timestamp ? format(parseISO(item.timestamp), 'HH:mm') : 'N/A', 
+    value: item[dataKey] ?? 0 // Ensure value is not undefined for the chart
   }));
   
   const chartDisplayConfig: ChartConfig = {
@@ -54,8 +48,8 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
     },
   };
 
-  const ChartComponent = chartType === 'line' ? LineChart : BarChart;
-  const DataComponent = chartType === 'line' ? Line : Bar;
+  const ChartComponent = LineChart; // Always LineChart now
+  const DataComponent = Line;
 
   const renderChart = (isModal: boolean = false) => (
     <ChartContainer config={chartDisplayConfig} className={cn("w-full", isModal ? "h-[70vh]" : "h-[300px]")}>
@@ -66,8 +60,8 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          interval={isModal && formattedData.length > 10 ? Math.max(1, Math.floor(formattedData.length / 6)) : 'preserveStartEnd'}
-          tickFormatter={(value: string) => value}
+          interval={isModal && formattedData.length > 10 ? Math.max(1, Math.floor(formattedData.length / 10)) : 'preserveStartEnd'} // Adjusted interval for better readability
+          tickFormatter={(value: string) => value} // Already 'HH:mm'
         />
         <YAxis 
           tickLine={false}
@@ -78,7 +72,7 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
         <ChartTooltip
           cursor={false}
           content={<ChartTooltipContent 
-                      indicator={chartType === 'line' ? 'dot' : 'rectangle'} 
+                      indicator={'dot'} 
                       labelFormatter={(_label, payload) => {
                         if (payload && payload.length > 0 && payload[0].payload.fullTimestamp) {
                           return payload[0].payload.fullTimestamp;
@@ -91,11 +85,10 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
           dataKey="value"
           type="monotone"
           stroke={color}
-          fill={color}
+          fill={color} // Fill is relevant for Area chart, but harmless for Line
           strokeWidth={2}
-          dot={{ r: 4, fill: color, stroke: "hsl(var(--background))", strokeWidth: 2 }}
-          activeDot={{r: 6}}
-          radius={chartType === 'bar' ? [4, 4, 0, 0] : undefined}
+          dot={{ r: isModal ? 3 : 2, fill: color, stroke: "hsl(var(--background))", strokeWidth: 1 }} // Smaller dots for card view
+          activeDot={{r: isModal ? 5 : 4}} // Slightly larger active dots
           name={chartDisplayConfig.value.label} 
         />
         <ChartLegend content={<ChartLegendContent />} />
@@ -106,10 +99,10 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Card className="shadow-lg col-span-1 md:col-span-2 hover:shadow-xl transition-shadow duration-300 cursor-pointer">
+        {/* Added overflow-hidden to the main card trigger */}
+        <Card className="shadow-lg col-span-1 md:col-span-2 hover:shadow-xl transition-shadow duration-300 cursor-pointer overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{title}</CardTitle>
-            {/* Expand button removed */}
           </CardHeader>
           <CardContent>
             {renderChart(false)}
@@ -120,7 +113,7 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
         <DialogHeader className="pb-2">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="flex-grow">
+        <div className="flex-grow overflow-hidden"> {/* Added overflow-hidden to ensure chart stays within bounds */}
           {renderChart(true)}
         </div>
       </DialogContent>
