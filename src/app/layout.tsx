@@ -52,7 +52,7 @@ export default function RootLayout({
         <div 
           className={cn(
             "fixed inset-0 z-0 overflow-hidden",
-            "bg-gradient-to-br from-[hsl(180,40%,50%)] to-[hsl(95,30%,55%)]" // Darkened Page background gradient: Cyan to Green
+            "bg-gradient-to-br from-[hsl(200,80%,70%)] to-[hsl(210,70%,85%)]" // Sky blue gradient
           )}
         >
           {/* Orb 1 - Shine Color */}
