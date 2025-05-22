@@ -14,11 +14,10 @@ import { ScrollArea } from './ui/scroll-area';
 
 interface PersonalizedTipsProps {
   latestReading: AirQualityReading | null;
-  locationDataFromFeed: LocationData | null;
-  initialLocation: LocationData | null;
+  derivedLocation: LocationData | null; // Changed from locationDataFromFeed and initialLocation
 }
 
-export function PersonalizedTips({ latestReading, locationDataFromFeed, initialLocation }: PersonalizedTipsProps) {
+export function PersonalizedTips({ latestReading, derivedLocation }: PersonalizedTipsProps) {
   const [userLocationInput, setUserLocationInput] = useState('');
   const [tips, setTips] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,15 +25,14 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
   const { toast } = useToast();
 
   useEffect(() => {
-    const bestLocation = locationDataFromFeed || initialLocation;
-    if (bestLocation?.address) {
-      setUserLocationInput(bestLocation.address);
-    } else if (bestLocation?.latitude && bestLocation?.longitude) {
-      setUserLocationInput(`${bestLocation.latitude.toFixed(4)}, ${bestLocation.longitude.toFixed(4)}`);
+    if (derivedLocation?.address) {
+      setUserLocationInput(derivedLocation.address);
+    } else if (derivedLocation?.latitude && derivedLocation?.longitude) {
+      setUserLocationInput(`${derivedLocation.latitude.toFixed(4)}, ${derivedLocation.longitude.toFixed(4)}`);
     } else {
-        setUserLocationInput('');
+        setUserLocationInput(''); // Clear if no derived location
     }
-  }, [locationDataFromFeed, initialLocation]);
+  }, [derivedLocation]);
 
   const fetchTips = useCallback(async () => {
     if (!latestReading) {
@@ -45,19 +43,16 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
     let locationStringForAI = "Unknown Location";
     if (userLocationInput) {
         locationStringForAI = userLocationInput;
-    } else {
-        const bestDeviceLocation = locationDataFromFeed || initialLocation;
-        if (bestDeviceLocation?.latitude && bestDeviceLocation?.longitude) {
-            locationStringForAI = `${bestDeviceLocation.latitude.toFixed(4)}, ${bestDeviceLocation.longitude.toFixed(4)}`;
-        } else if (latestReading.latitude && latestReading.longitude) {
-            locationStringForAI = `${latestReading.latitude.toFixed(4)}, ${latestReading.longitude.toFixed(4)}`;
-        }
+    } else if (derivedLocation?.latitude && derivedLocation?.longitude) {
+        locationStringForAI = `${derivedLocation.latitude.toFixed(4)}, ${derivedLocation.longitude.toFixed(4)}`;
+    } else if (latestReading.latitude && latestReading.longitude) { // Fallback to location in latestReading if derivedLocation isn't set (e.g. if user cleared input)
+        locationStringForAI = `${latestReading.latitude.toFixed(4)}, ${latestReading.longitude.toFixed(4)}`;
     }
-    if (locationStringForAI === "Unknown Location" && !userLocationInput) {
+
+    if (locationStringForAI === "Unknown Location") {
          toast({ title: "Missing Location", description: "Please provide your location or ensure it's available from the data feed to get tips.", variant: "destructive" });
          return;
     }
-
 
     setIsLoading(true);
     setError(null);
@@ -90,7 +85,7 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
     } finally {
       setIsLoading(false);
     }
-  }, [latestReading, userLocationInput, locationDataFromFeed, initialLocation, toast]);
+  }, [latestReading, userLocationInput, derivedLocation, toast]);
 
   return (
     <Card className="shadow-lg col-span-1 md:col-span-2 lg:col-span-3">
@@ -100,7 +95,7 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
           Personalized Air Quality Tips
         </CardTitle>
         <CardDescription>
-          Get AI-powered suggestions to improve your air quality based on current conditions and your location.
+          Get AI-powered suggestions to improve your air quality based on current conditions and your location (from data feed or your input).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -111,11 +106,13 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
             type="text"
             value={userLocationInput}
             onChange={(e) => setUserLocationInput(e.target.value)}
-            placeholder={ (latestReading?.latitude && latestReading?.longitude) ? 
-                          `${latestReading.latitude.toFixed(4)}, ${latestReading.longitude.toFixed(4)}` :
-                          ((locationDataFromFeed || initialLocation) ? 
-                          (((locationDataFromFeed || initialLocation)?.address) || `${(locationDataFromFeed || initialLocation)?.latitude?.toFixed(4)}, ${(locationDataFromFeed || initialLocation)?.longitude?.toFixed(4)}`) 
-                          : "Enter your location")}
+            placeholder={
+              (derivedLocation?.latitude && derivedLocation?.longitude) 
+                ? `${derivedLocation.latitude.toFixed(4)}, ${derivedLocation.longitude.toFixed(4)}`
+                : (latestReading?.latitude && latestReading?.longitude)
+                  ? `${latestReading.latitude.toFixed(4)}, ${latestReading.longitude.toFixed(4)}`
+                  : "Enter your location"
+            }
             disabled={isLoading}
           />
         </div>

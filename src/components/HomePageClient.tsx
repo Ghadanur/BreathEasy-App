@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { AirQualityReading, LocationData } from '@/types';
-import { useAirQualityReadings } from '@/hooks/useAirQualityReadings'; // Using the hook
+import { useAirQualityReadings } from '@/hooks/useAirQualityReadings';
 import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
@@ -19,60 +19,36 @@ const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod =>
 
 
 export function HomePageClient() {
-  const { readings: historicalData, loading: airQualityLoading, error: airQualityError } = useAirQualityReadings(96); // Get last 96 readings
-
+  const { readings: historicalData, loading: airQualityLoading, error: airQualityError } = useAirQualityReadings(96);
   const latestReading = historicalData && historicalData.length > 0 ? historicalData[0] : null;
 
   const [location, setLocation] = useState<LocationData | null>(null);
-  const [isLocationLoading, setIsLocationLoading] = useState(true);
+  // isLocationLoading is now directly tied to airQualityLoading for simplicity,
+  // as location comes from the same data feed.
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLocationLoading(true);
     if (latestReading?.latitude && latestReading?.longitude) {
-      setLocation({ latitude: latestReading.latitude, longitude: latestReading.longitude });
-      setIsLocationLoading(false);
-    } else if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          setIsLocationLoading(false);
-        },
-        (error) => {
-          if (error.code !== error.PERMISSION_DENIED) {
-            console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
-          }
-          toast({
-            title: error.code === error.PERMISSION_DENIED ? "Location Permission Denied" : "Location Error",
-            description: error.code === error.PERMISSION_DENIED ? "Location access was denied. Using location from data feed if available." : "Could not retrieve device location. Using location from data feed if available.",
-            variant: "default",
-          });
-          // Fallback to data feed's location if GPS fails or is denied, and if available
-          if (latestReading?.latitude && latestReading?.longitude) {
-            setLocation({ latitude: latestReading.latitude, longitude: latestReading.longitude });
-          } else {
-            setLocation(null); // Or a default location if preferred
-          }
-          setIsLocationLoading(false);
-        }
-      );
-    } else {
-      toast({
-        title: "Location Not Available",
-        description: "Device GPS not available. Using location from data feed if available.",
-        variant: "default",
+      setLocation({
+        latitude: latestReading.latitude,
+        longitude: latestReading.longitude,
+        // Optionally, you could implement reverse geocoding here if desired,
+        // but for now, we'll just use lat/lon from the feed.
       });
-      if (latestReading?.latitude && latestReading?.longitude) {
-        setLocation({ latitude: latestReading.latitude, longitude: latestReading.longitude });
-      } else {
-        setLocation(null);
-      }
-      setIsLocationLoading(false);
+    } else if (!airQualityLoading && latestReading) {
+      // If loading is done, and latestReading exists but has no location,
+      // set location to null explicitly.
+      setLocation(null);
+      // toast({
+      //   title: "Location Data Missing",
+      //   description: "Location data (latitude/longitude) is not available in the latest air quality reading from Firebase.",
+      //   variant: "default",
+      // });
+    } else if (!airQualityLoading && !latestReading) {
+      // If loading is done and there's no latest reading at all.
+      setLocation(null);
     }
-  }, [latestReading, toast]);
+  }, [latestReading, airQualityLoading, toast]);
 
   if (airQualityLoading && historicalData.length === 0) {
     return (
@@ -143,7 +119,8 @@ export function HomePageClient() {
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
-            <LocationMap location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2 xl:col-span-2" />
+            {/* Pass airQualityLoading as isLoading prop to LocationMap */}
+            <LocationMap location={location} isLoading={airQualityLoading} className="col-span-1 sm:col-span-2 xl:col-span-2" />
           </>
         ) : (
           !airQualityLoading && <p className="col-span-full text-center text-muted-foreground">No current air quality data available.</p>
@@ -168,8 +145,8 @@ export function HomePageClient() {
       <section>
         <PersonalizedTips
           latestReading={latestReading}
-          locationDataFromFeed={location}
-          initialLocation={location}
+          // Pass the location derived from Firebase feed
+          derivedLocation={location} 
         />
       </section>
 
