@@ -1,7 +1,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadDialogTitle, DialogTrigger } from '@/components/ui/dialog'; // Renamed DialogTitle to ShadDialogTitle to avoid conflict
 import { cn } from '@/lib/utils';
 
 interface AirQualityCardProps {
@@ -36,19 +36,20 @@ export function AirQualityCard({ title, value, unit, icon: Icon, description, cl
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
             <Icon className={cn("h-10 w-10 text-primary")} />
-            <DialogTitle className="text-2xl">{title}</DialogTitle>
+            <ShadDialogTitle className="text-2xl text-primary">{title}</ShadDialogTitle> {/* Added text-primary */}
           </div>
         </DialogHeader>
         <div className="py-4 text-center sm:text-left">
-          <div className="text-2xl font-bold text-primary"> {/* Changed to text-primary */}
+          <div className="text-2xl font-bold text-primary">
             {value}
-            {unit && <span className="text-xs text-primary/80 ml-1">{unit}</span>} {/* Changed to text-primary with opacity */}
+            {unit && <span className="text-xs text-primary/80 ml-1">{unit}</span>}
           </div>
           {description && (
-            <p className="text-sm mt-2">{description}</p> // Kept default dialog text color for description
+            <p className="text-sm text-primary/70 mt-2">{description}</p> /* Changed to text-primary/70 */
           )}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+
