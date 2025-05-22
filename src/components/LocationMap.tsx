@@ -7,8 +7,8 @@ import { MapPin, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import type L from 'leaflet';
-import { useEffect, useState } from 'react'; // Removed useRef
-import { LoadingSpinner } from '@/components/LoadingSpinner'; // Corrected import path
+import { useEffect, useState } from 'react';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface LocationMapProps {
   location: LocationData | null;
@@ -25,7 +25,14 @@ export default function LocationMap({ location, isLoading, className }: Location
     // Create icon on client mount, only if window is defined
     if (typeof window !== 'undefined') {
         const LModule = require('leaflet') as typeof L;
-         setLeafletIcon(new LModule.Icon({
+        
+        // Common fix for Leaflet icon issues in Next.js/Webpack environments
+        // Even if using a custom icon, this can prevent errors from default logic.
+        if (LModule.Icon.Default.prototype._getIconUrl) {
+          delete LModule.Icon.Default.prototype._getIconUrl;
+        }
+        
+        setLeafletIcon(new LModule.Icon({
             iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
             iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
             shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -39,8 +46,6 @@ export default function LocationMap({ location, isLoading, className }: Location
 
   const mapKey = location ? `map-${location.latitude}-${location.longitude}` : 'map-loading-or-no-location';
   
-  // Removed useEffect for mapInstanceRef.current.remove()
-
   if (isLoading) {
     return (
       <Card className={cn(cardBaseClass, className)}>
@@ -83,16 +88,14 @@ export default function LocationMap({ location, isLoading, className }: Location
       </CardHeader>
       <CardContent>
         <div key={`map-wrapper-${mapKey}`} className="h-[200px] rounded-md overflow-hidden">
-          {/* Render MapContainer only if window is defined and leafletIcon is ready */}
           {typeof window !== 'undefined' && leafletIcon ? (
             <MapContainer
-              id={mapKey} // Explicitly set DOM ID for Leaflet
-              key={mapKey} // React key for reconciliation
+              id={mapKey} 
+              key={mapKey} 
               center={position}
               zoom={13}
               scrollWheelZoom={false}
               style={{ height: '100%', width: '100%' }}
-              // Removed whenCreated and direct mapInstanceRef assignment
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -117,4 +120,3 @@ export default function LocationMap({ location, isLoading, className }: Location
     </Card>
   );
 }
-
