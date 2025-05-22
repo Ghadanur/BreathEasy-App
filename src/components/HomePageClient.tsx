@@ -7,14 +7,14 @@ import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudFog, Cloudy, MountainSnow } from 'lucide-react'; // MountainSnow for CO2 as Wind is used for app logo.
+import { Thermometer, Droplets, Wind, CloudFog, Cloudy, MountainSnow } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAirQualityReadings } from '@/hooks/useAirQualityReadings';
 
 const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod => mod.default), {
   ssr: false,
-  loading: () => <div className="col-span-1 sm:col-span-2 xl:col-span-2 h-[230px] flex items-center justify-center rounded-lg border bg-card shadow-sm p-6"><LoadingSpinner text="Loading location..." /></div>,
+  loading: () => <div className="col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-4 h-[230px] flex items-center justify-center rounded-lg border bg-card shadow-sm p-6"><LoadingSpinner text="Loading location..." /></div>,
 });
 
 
@@ -64,8 +64,7 @@ export function HomePageClient() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="flex justify-between items-center">
-        {/* Removed font-eb-garamond, it will now use font-sans (Inter) */}
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-black to-primary bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-black to-primary bg-clip-text text-transparent font-sans">
           Air Quality Dashboard
         </h1>
       </div>
@@ -93,9 +92,9 @@ export function HomePageClient() {
               title="CO₂"
               value={latestReading.co2.toFixed(0)}
               unit="ppm"
-              icon={MountainSnow} // Changed icon from Wind
+              icon={MountainSnow} 
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
-              description="Carbon Dioxide Level"
+              description="Carbon Dioxide Level (MQ135)"
             />
              <AirQualityCard
               title="PM2.5"
@@ -113,7 +112,7 @@ export function HomePageClient() {
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
-            <LocationMap location={location} isLoading={airQualityLoading} className="col-span-1 sm:col-span-2 xl:col-span-2" />
+            <LocationMap location={location} isLoading={airQualityLoading} className="col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-4" />
           </>
         ) : (
           !airQualityLoading && <p className="col-span-full text-center text-muted-foreground">No current air quality data available.</p>
