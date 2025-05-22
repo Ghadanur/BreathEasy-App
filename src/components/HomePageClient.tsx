@@ -12,9 +12,10 @@ import { Thermometer, Droplets, Wind, Cloudy, CloudFog } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 
-const LocationDisplay = dynamic(() => import('@/components/LocationDisplay').then(mod => mod.LocationDisplay), {
+// Correct dynamic import for LocationMap (default export)
+const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod => mod.default), {
   ssr: false,
-  loading: () => <div className="col-span-1 sm:col-span-2 xl:col-span-2 h-[138px] flex items-center justify-center rounded-lg border bg-card shadow-sm p-6"><LoadingSpinner text="Loading location..." /></div>,
+  loading: () => <div className="col-span-1 sm:col-span-2 xl:col-span-2 h-[230px] flex items-center justify-center rounded-lg border bg-card shadow-sm p-6"><LoadingSpinner text="Loading map..." /></div>,
 });
 
 
@@ -32,11 +33,13 @@ export function HomePageClient() {
     setIsLocationLoading(true);
     let locationSourceUsed = "none"; 
 
+    // Prioritize location from the latest reading's embedded lat/lon
     if (latestReading?.latitude && latestReading?.longitude && typeof latestReading.latitude === 'number' && typeof latestReading.longitude === 'number') {
       setLocation({ latitude: latestReading.latitude, longitude: latestReading.longitude });
       setIsLocationLoading(false);
-      locationSourceUsed = "firebase_reading";
+      locationSourceUsed = "firebase_reading_lat_lon";
     } 
+    // Fallback to navigator.geolocation if no lat/lon in reading
     else if (navigator.geolocation) {
       locationSourceUsed = "gps_attempt";
       navigator.geolocation.getCurrentPosition(
@@ -49,23 +52,24 @@ export function HomePageClient() {
           locationSourceUsed = "gps_success";
         },
         (error) => {
-          if (error.code !== error.PERMISSION_DENIED) {
+          if (error.code !== error.PERMISSION_DENIED) { // Don't log permission denied as a console error
             console.error(`Error getting location details: ${error.message} (Code: ${error.code})`, error);
           }
-          if (locationSourceUsed !== "firebase_reading") {
+          // Still show toast for permission denied, as it's user feedback
+          if (locationSourceUsed !== "firebase_reading_lat_lon") { // Avoid double toast if firebase location was already used
             toast({
               title: error.code === error.PERMISSION_DENIED ? "Location Permission Denied" : "Location Error",
-              description: error.code === error.PERMISSION_DENIED ? "Location access was denied." : "Could not retrieve device location.",
-              variant: "default",
+              description: error.code === error.PERMISSION_DENIED ? "Location access was denied by your browser settings." : "Could not retrieve device location.",
+              variant: "default", // Changed from destructive for permission denied
             });
           }
           setIsLocationLoading(false); 
           locationSourceUsed = "gps_error";
         }
       );
-    } else {
+    } else { // GPS not available at all
       locationSourceUsed = "gps_unavailable";
-      if (locationSourceUsed !== "firebase_reading") { 
+      if (locationSourceUsed !== "firebase_reading_lat_lon") { 
         toast({
           title: "Location Not Available",
           description: "Could not retrieve location from Firebase or device GPS.",
@@ -74,11 +78,13 @@ export function HomePageClient() {
       }
       setIsLocationLoading(false);
     }
+    
+    // Ensure loading state is false if no source was successfully used initially
     if (locationSourceUsed === "none" || (locationSourceUsed === "gps_attempt" && !isLocationLoading)) {
        setIsLocationLoading(false);
     }
 
-  }, [latestReading, toast]);
+  }, [latestReading, toast]); // Re-run if latestReading changes (to get its embedded lat/lon)
 
   useEffect(() => {
     if (airQualityError) {
@@ -135,7 +141,7 @@ export function HomePageClient() {
               title="CO₂" 
               value={latestReading.co2.toFixed(0)} 
               unit="ppm"
-              icon={Wind}
+              icon={Wind} // MQ135 often represents general air quality / CO2 equivalent
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
               description="Carbon Dioxide Level"
             />
@@ -155,7 +161,7 @@ export function HomePageClient() {
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
-            <LocationDisplay location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2 xl:col-span-2" />
+             <LocationMap location={location} isLoading={isLocationLoading} className="col-span-1 sm:col-span-2 xl:col-span-2" />
           </>
         ) : (
           !airQualityLoading && <p className="col-span-full text-center text-muted-foreground">Could not load current air quality data from Firebase. Please check your configuration and data source.</p>
@@ -181,7 +187,7 @@ export function HomePageClient() {
         <PersonalizedTips 
           latestReading={latestReading} 
           locationDataFromFeed={locationDataFromFeed} 
-          initialLocation={location}
+          initialLocation={location} // Pass the resolved location (Firebase or GPS)
         />
       </section>
 
@@ -192,3 +198,4 @@ export function HomePageClient() {
     </div>
   );
 }
+
