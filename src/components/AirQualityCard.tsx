@@ -35,8 +35,8 @@ export function AirQualityCard({ title, value, unit, icon: Icon, description, cl
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
-            {/* Changed icon color in dialog to text-muted-foreground for a "lighter" feel */}
-            <Icon className={cn("h-10 w-10 text-muted-foreground")} />
+            {/* Changed icon color in dialog to text-primary for a "lighter/glow up" feel */}
+            <Icon className={cn("h-10 w-10 text-primary")} />
             <DialogTitle className="text-2xl">{title}</DialogTitle>
           </div>
         </DialogHeader>
