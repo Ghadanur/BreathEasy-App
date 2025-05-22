@@ -35,19 +35,17 @@ export function AirQualityCard({ title, value, unit, icon: Icon, description, cl
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
-            {/* Changed icon color in dialog to text-primary for a "lighter/glow up" feel */}
             <Icon className={cn("h-10 w-10 text-primary")} />
             <DialogTitle className="text-2xl">{title}</DialogTitle>
           </div>
         </DialogHeader>
         <div className="py-4 text-center sm:text-left">
-          {/* Text sizes match the card's display, colors use dialog defaults for contrast */}
-          <div className="text-2xl font-bold">
+          <div className="text-2xl font-bold text-primary"> {/* Changed to text-primary */}
             {value}
-            {unit && <span className="text-xs ml-1">{unit}</span>}
+            {unit && <span className="text-xs text-primary/80 ml-1">{unit}</span>} {/* Changed to text-primary with opacity */}
           </div>
           {description && (
-            <p className="text-xs mt-2">{description}</p>
+            <p className="text-sm mt-2">{description}</p> // Kept default dialog text color for description
           )}
         </div>
       </DialogContent>
