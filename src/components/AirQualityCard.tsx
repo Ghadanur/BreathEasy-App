@@ -35,22 +35,22 @@ export function AirQualityCard({ title, value, unit, icon: Icon, description, cl
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
-            {/* Icon in dialog is now white */}
-            <Icon className={cn("h-10 w-10", "text-white")} />
-            {/* Dialog title text is now white */}
-            <ShadDialogTitle className="text-2xl text-white">{title}</ShadDialogTitle>
+            {/* Icon in dialog uses original card color or defaults to muted-foreground */}
+            <Icon className={cn("h-10 w-10 text-muted-foreground", color)} />
+            {/* Dialog title text uses card-foreground */}
+            <ShadDialogTitle className="text-2xl text-card-foreground">{title}</ShadDialogTitle>
           </div>
         </DialogHeader>
         <div className="py-4 text-center sm:text-left">
-          {/* Value text is now white */}
-          <div className="text-5xl font-bold text-white"> 
+          {/* Value text uses card-foreground */}
+          <div className="text-5xl font-bold text-card-foreground"> 
             {value}
-            {/* Unit text is now white */}
-            {unit && <span className="text-xl font-medium ml-1 text-white">{unit}</span>}
+            {/* Unit text uses muted-foreground */}
+            {unit && <span className="text-xl font-medium ml-1 text-muted-foreground">{unit}</span>}
           </div>
           {description && (
-            // Description text is now white
-            <p className="text-sm text-white mt-2">{description}</p> 
+            // Description text uses muted-foreground
+            <p className="text-sm text-muted-foreground mt-2">{description}</p> 
           )}
         </div>
       </DialogContent>
