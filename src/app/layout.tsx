@@ -57,15 +57,15 @@ export default function RootLayout({
         >
           {/* Orb 1 - Shine Color */}
           <div 
-            className="absolute -top-20 -left-20 w-72 h-72 bg-[hsl(50,70%,90%)] rounded-full animate-float filter blur-3xl opacity-60"
+            className="absolute -top-20 -left-20 w-72 h-72 bg-[hsl(50,70%,90%)] rounded-full animate-float filter blur-3xl opacity-70" 
           ></div>
           {/* Orb 2 - Shine Color */}
           <div 
-            className="absolute -bottom-20 -right-10 w-96 h-96 bg-[hsl(50,70%,90%)] rounded-full animate-float-delayed filter blur-3xl opacity-50"
+            className="absolute -bottom-20 -right-10 w-96 h-96 bg-[hsl(50,70%,90%)] rounded-full animate-float-delayed filter blur-3xl opacity-60"
           ></div>
           {/* Orb 3 - Shine Color */}
           <div 
-            className="absolute top-1/3 left-1/3 w-60 h-60 bg-[hsl(50,70%,90%)] rounded-full animate-float filter blur-3xl opacity-40"
+            className="absolute top-1/3 left-1/3 w-60 h-60 bg-[hsl(50,70%,90%)] rounded-full animate-float filter blur-3xl opacity-50"
           ></div>
         </div>
 
