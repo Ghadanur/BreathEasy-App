@@ -7,8 +7,8 @@ import { MapPin, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import type L from 'leaflet';
-import { useEffect, useRef, useState } from 'react';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { useEffect, useState } from 'react'; // Removed useRef
+import { LoadingSpinner } from '@/components/LoadingSpinner'; // Corrected import path
 
 interface LocationMapProps {
   location: LocationData | null;
@@ -19,7 +19,6 @@ interface LocationMapProps {
 // This component is responsible for displaying the location on a map.
 export default function LocationMap({ location, isLoading, className }: LocationMapProps) {
   const cardBaseClass = "shadow-lg";
-  const mapInstanceRef = useRef<L.Map | null>(null);
   const [leafletIcon, setLeafletIcon] = useState<L.Icon | undefined>(undefined);
 
   useEffect(() => {
@@ -40,16 +39,7 @@ export default function LocationMap({ location, isLoading, className }: Location
 
   const mapKey = location ? `map-${location.latitude}-${location.longitude}` : 'map-loading-or-no-location';
   
-  useEffect(() => {
-    const currentMap = mapInstanceRef.current;
-    // Cleanup function to remove the map instance if the component unmounts or mapKey changes
-    return () => {
-      if (currentMap) {
-        currentMap.remove();
-        mapInstanceRef.current = null; // Clear the ref
-      }
-    };
-  }, [mapKey]); // Rerun if mapKey changes, ensuring cleanup of old instance
+  // Removed useEffect for mapInstanceRef.current.remove()
 
   if (isLoading) {
     return (
@@ -96,16 +86,13 @@ export default function LocationMap({ location, isLoading, className }: Location
           {/* Render MapContainer only if window is defined and leafletIcon is ready */}
           {typeof window !== 'undefined' && leafletIcon ? (
             <MapContainer
-              id={mapKey} 
-              key={mapKey} 
+              id={mapKey} // Explicitly set DOM ID for Leaflet
+              key={mapKey} // React key for reconciliation
               center={position}
               zoom={13}
               scrollWheelZoom={false}
               style={{ height: '100%', width: '100%' }}
-              className="z-0" // Ensure map is not hidden
-              whenCreated={(mapInstance) => {
-                mapInstanceRef.current = mapInstance;
-              }}
+              // Removed whenCreated and direct mapInstanceRef assignment
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -130,3 +117,4 @@ export default function LocationMap({ location, isLoading, className }: Location
     </Card>
   );
 }
+
