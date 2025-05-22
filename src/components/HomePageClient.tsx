@@ -7,7 +7,7 @@ import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, Cloudy, CloudFog } from 'lucide-react';
+import { Thermometer, Droplets, Wind, CloudFog, Cloudy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAirQualityReadings } from '@/hooks/useAirQualityReadings'; // Using the Firebase hook
@@ -81,7 +81,6 @@ export function HomePageClient() {
               icon={Thermometer}
               color="text-orange-500"
               description="Ambient temperature"
-              className="animate-float"
             />
             <AirQualityCard
               title="Humidity"
@@ -90,7 +89,6 @@ export function HomePageClient() {
               icon={Droplets}
               color="text-blue-500"
               description="Relative humidity"
-              className="animate-float-delayed"
             />
             <AirQualityCard
               title="CO₂"
@@ -99,7 +97,6 @@ export function HomePageClient() {
               icon={Wind}
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
               description="Carbon Dioxide Level"
-              className="animate-float"
             />
             <AirQualityCard
               title="PM2.5"
@@ -108,7 +105,6 @@ export function HomePageClient() {
               icon={CloudFog}
               color="text-indigo-500"
               description="Particulate Matter <2.5μm"
-              className="animate-float-delayed"
             />
             <AirQualityCard
               title="PM10"
