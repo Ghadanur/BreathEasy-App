@@ -22,6 +22,11 @@ export default function LocationMap({ location, isLoading, className }: Location
       if (LModule.Icon.Default.prototype._getIconUrl) {
         delete LModule.Icon.Default.prototype._getIconUrl;
       }
+      LModule.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      });
       setLeafletIcon(new LModule.Icon({
         iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
         iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -56,7 +61,7 @@ export default function LocationMap({ location, isLoading, className }: Location
       <div key={`map-wrapper-${mapKey}-${isDialog}`} className={cn("rounded-md overflow-hidden", isDialog ? "h-[70vh]" : "h-[200px]")}>
         {typeof window !== 'undefined' && leafletIcon ? (
           <MapContainer
-            key={`${mapKey}-${isDialog}`}
+            key={mapKey} // React key for reconciliation
             center={position}
             zoom={13}
             scrollWheelZoom={isDialog} // Enable scroll wheel zoom only in dialog
@@ -103,7 +108,7 @@ export default function LocationMap({ location, isLoading, className }: Location
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl h-[85vh] flex flex-col p-4">
         <DialogHeader className="pb-2">
-          <ShadDialogTitle className="text-lg font-semibold">Sensor Location</ShadDialogTitle>
+          <ShadDialogTitle className="text-lg font-semibold text-white">Sensor Location</ShadDialogTitle>
         </DialogHeader>
         <div className="flex-grow">
           {renderMapContent(true)}
