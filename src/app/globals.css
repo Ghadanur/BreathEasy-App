@@ -108,22 +108,5 @@
   }
 }
 
-@layer utilities {
-  @keyframes float {
-    0%, 100% { 
-      transform: translateY(0px) scale(1) rotate(0deg); 
-    }
-    50% { 
-      transform: translateY(-20px) scale(1.05) rotate(2deg); 
-    }
-  }
-
-  @keyframes float-delayed {
-    0%, 100% { 
-      transform: translateY(0px) scale(1) rotate(0deg); 
-    }
-    50% { 
-      transform: translateY(15px) scale(0.95) rotate(-1deg); 
-    }
-  }
-}
+/* Removed the @layer utilities block that contained the custom keyframes */
+/* Tailwind will generate these from tailwind.config.ts */
