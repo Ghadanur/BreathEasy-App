@@ -32,7 +32,7 @@ export function AirQualityCard({ title, value, unit, icon: Icon, description, cl
           </CardContent>
         </Card>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
             <Icon className={cn("h-10 w-10", color ?? 'text-primary')} />
@@ -40,12 +40,14 @@ export function AirQualityCard({ title, value, unit, icon: Icon, description, cl
           </div>
         </DialogHeader>
         <div className="py-4 text-center sm:text-left">
-          <div className="text-4xl font-bold">
+          <div className="text-5xl font-bold"> {/* Increased font size */}
             {value}
-            {unit && <span className="text-lg text-muted-foreground ml-1.5">{unit}</span>}
+            {/* Using default text color for better contrast in dialog for unit */}
+            {unit && <span className="text-xl ml-2 align-baseline">{unit}</span>}
           </div>
           {description && (
-            <p className="text-md text-muted-foreground mt-2">{description}</p>
+            // Using default text color for better contrast in dialog for description
+            <p className="text-lg mt-2">{description}</p>
           )}
         </div>
       </DialogContent>
