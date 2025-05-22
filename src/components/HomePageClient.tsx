@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from 'react';
 import type { AirQualityReading, LocationData } from '@/types';
-import { useAirQualityReadings } from '@/hooks/useAirQualityReadings';
 import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
@@ -11,6 +10,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { Thermometer, Droplets, Wind, Cloudy, CloudFog } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
+import { useAirQualityReadings } from '@/hooks/useAirQualityReadings'; // Using the Firebase hook
 
 const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod => mod.default), {
   ssr: false,
@@ -19,12 +19,10 @@ const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod =>
 
 
 export function HomePageClient() {
-  const { readings: historicalData, loading: airQualityLoading, error: airQualityError } = useAirQualityReadings(96);
+  const { readings: historicalData, loading: airQualityLoading, error: airQualityError } = useAirQualityReadings(96); // Fetch last 96 readings
   const latestReading = historicalData && historicalData.length > 0 ? historicalData[0] : null;
 
   const [location, setLocation] = useState<LocationData | null>(null);
-  // isLocationLoading is now directly tied to airQualityLoading for simplicity,
-  // as location comes from the same data feed.
   const { toast } = useToast();
 
   useEffect(() => {
@@ -32,20 +30,17 @@ export function HomePageClient() {
       setLocation({
         latitude: latestReading.latitude,
         longitude: latestReading.longitude,
-        // Optionally, you could implement reverse geocoding here if desired,
-        // but for now, we'll just use lat/lon from the feed.
+        // If you have a geocoding service, you could fetch address here
       });
     } else if (!airQualityLoading && latestReading) {
-      // If loading is done, and latestReading exists but has no location,
-      // set location to null explicitly.
       setLocation(null);
+      // Potentially toast if location data is expected but missing from feed
       // toast({
       //   title: "Location Data Missing",
-      //   description: "Location data (latitude/longitude) is not available in the latest air quality reading from Firebase.",
+      //   description: "Location data not available in the latest air quality reading from Firebase.",
       //   variant: "default",
       // });
     } else if (!airQualityLoading && !latestReading) {
-      // If loading is done and there's no latest reading at all.
       setLocation(null);
     }
   }, [latestReading, airQualityLoading, toast]);
@@ -86,6 +81,7 @@ export function HomePageClient() {
               icon={Thermometer}
               color="text-orange-500"
               description="Ambient temperature"
+              className="animate-float"
             />
             <AirQualityCard
               title="Humidity"
@@ -94,6 +90,7 @@ export function HomePageClient() {
               icon={Droplets}
               color="text-blue-500"
               description="Relative humidity"
+              className="animate-float-delayed"
             />
             <AirQualityCard
               title="CO₂"
@@ -102,6 +99,7 @@ export function HomePageClient() {
               icon={Wind}
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
               description="Carbon Dioxide Level"
+              className="animate-float"
             />
             <AirQualityCard
               title="PM2.5"
@@ -110,6 +108,7 @@ export function HomePageClient() {
               icon={CloudFog}
               color="text-indigo-500"
               description="Particulate Matter <2.5μm"
+              className="animate-float-delayed"
             />
             <AirQualityCard
               title="PM10"
@@ -119,7 +118,6 @@ export function HomePageClient() {
               color="text-slate-500"
               description="Particulate Matter <10μm"
             />
-            {/* Pass airQualityLoading as isLoading prop to LocationMap */}
             <LocationMap location={location} isLoading={airQualityLoading} className="col-span-1 sm:col-span-2 xl:col-span-2" />
           </>
         ) : (
@@ -145,7 +143,6 @@ export function HomePageClient() {
       <section>
         <PersonalizedTips
           latestReading={latestReading}
-          // Pass the location derived from Firebase feed
           derivedLocation={location} 
         />
       </section>
@@ -157,3 +154,4 @@ export function HomePageClient() {
     </div>
   );
 }
+
