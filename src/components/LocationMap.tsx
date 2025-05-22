@@ -16,13 +16,14 @@ interface LocationMapProps {
   className?: string;
 }
 
-function LocationMapComponent({ location, isLoading, className }: LocationMapProps) {
+// This component is responsible for displaying the location on a map.
+export default function LocationMap({ location, isLoading, className }: LocationMapProps) {
   const cardBaseClass = "shadow-lg";
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [leafletIcon, setLeafletIcon] = useState<L.Icon | undefined>(undefined);
 
   useEffect(() => {
-    // Create icon on client mount
+    // Create icon on client mount, only if window is defined
     if (typeof window !== 'undefined') {
         const LModule = require('leaflet') as typeof L;
          setLeafletIcon(new LModule.Icon({
@@ -41,24 +42,25 @@ function LocationMapComponent({ location, isLoading, className }: LocationMapPro
   
   useEffect(() => {
     const currentMap = mapInstanceRef.current;
+    // Cleanup function to remove the map instance if the component unmounts or mapKey changes
     return () => {
       if (currentMap) {
         currentMap.remove();
-        mapInstanceRef.current = null;
+        mapInstanceRef.current = null; // Clear the ref
       }
     };
-  }, [mapKey]); 
+  }, [mapKey]); // Rerun if mapKey changes, ensuring cleanup of old instance
 
   if (isLoading) {
     return (
-      <Card className={cn(cardBaseClass, className, "col-span-1 sm:col-span-2")}>
+      <Card className={cn(cardBaseClass, className)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Location</CardTitle>
           <MapPin className="h-6 w-6 text-accent animate-pulse" />
         </CardHeader>
         <CardContent>
           <div className="h-[200px] flex items-center justify-center bg-muted/50 rounded-md">
-            <LoadingSpinner text="Loading map..." />
+            <LoadingSpinner text="Fetching location..." />
           </div>
         </CardContent>
       </Card>
@@ -67,7 +69,7 @@ function LocationMapComponent({ location, isLoading, className }: LocationMapPro
 
   if (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
     return (
-      <Card className={cn(cardBaseClass, className, "col-span-1 sm:col-span-2")}>
+      <Card className={cn(cardBaseClass, className)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Location</CardTitle>
           <AlertTriangle className="h-6 w-6 text-destructive" />
@@ -84,13 +86,14 @@ function LocationMapComponent({ location, isLoading, className }: LocationMapPro
   const position: L.LatLngExpression = [location.latitude, location.longitude];
 
   return (
-    <Card className={cn(cardBaseClass, className, "col-span-1 sm:col-span-2")}>
+    <Card className={cn(cardBaseClass, className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">Current Location</CardTitle>
         <MapPin className="h-6 w-6 text-accent" />
       </CardHeader>
       <CardContent>
         <div key={`map-wrapper-${mapKey}`} className="h-[200px] rounded-md overflow-hidden">
+          {/* Render MapContainer only if window is defined and leafletIcon is ready */}
           {typeof window !== 'undefined' && leafletIcon ? (
             <MapContainer
               id={mapKey} 
@@ -99,7 +102,7 @@ function LocationMapComponent({ location, isLoading, className }: LocationMapPro
               zoom={13}
               scrollWheelZoom={false}
               style={{ height: '100%', width: '100%' }}
-              className="z-0"
+              className="z-0" // Ensure map is not hidden
               whenCreated={(mapInstance) => {
                 mapInstanceRef.current = mapInstance;
               }}
@@ -127,5 +130,3 @@ function LocationMapComponent({ location, isLoading, className }: LocationMapPro
     </Card>
   );
 }
-
-export default LocationMapComponent; // Default export
