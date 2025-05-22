@@ -35,22 +35,22 @@ export function AirQualityCard({ title, value, unit, icon: Icon, description, cl
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
-            {/* Icon in dialog now uses the original card icon color, or defaults to popover-foreground */}
-            <Icon className={cn("h-10 w-10", color ? color : "text-popover-foreground")} />
-            {/* Dialog title uses default popover-foreground color */}
-            <ShadDialogTitle className="text-2xl">{title}</ShadDialogTitle>
+            {/* Icon in dialog is now white */}
+            <Icon className={cn("h-10 w-10", "text-white")} />
+            {/* Dialog title text is now white */}
+            <ShadDialogTitle className="text-2xl text-white">{title}</ShadDialogTitle>
           </div>
         </DialogHeader>
         <div className="py-4 text-center sm:text-left">
-          {/* Value text uses default popover-foreground color, but remains large */}
-          <div className="text-5xl font-bold"> 
+          {/* Value text is now white */}
+          <div className="text-5xl font-bold text-white"> 
             {value}
-            {/* Unit text uses default popover-foreground color */}
-            {unit && <span className="text-xl font-medium ml-1">{unit}</span>}
+            {/* Unit text is now white */}
+            {unit && <span className="text-xl font-medium ml-1 text-white">{unit}</span>}
           </div>
           {description && (
-            // Description text uses standard muted-foreground
-            <p className="text-sm text-muted-foreground mt-2">{description}</p> 
+            // Description text is now white
+            <p className="text-sm text-white mt-2">{description}</p> 
           )}
         </div>
       </DialogContent>
