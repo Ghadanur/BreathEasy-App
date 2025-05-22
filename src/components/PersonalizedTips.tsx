@@ -49,6 +49,8 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
         const bestDeviceLocation = locationDataFromFeed || initialLocation;
         if (bestDeviceLocation?.latitude && bestDeviceLocation?.longitude) {
             locationStringForAI = `${bestDeviceLocation.latitude.toFixed(4)}, ${bestDeviceLocation.longitude.toFixed(4)}`;
+        } else if (latestReading.latitude && latestReading.longitude) {
+            locationStringForAI = `${latestReading.latitude.toFixed(4)}, ${latestReading.longitude.toFixed(4)}`;
         }
     }
     if (locationStringForAI === "Unknown Location" && !userLocationInput) {
@@ -109,9 +111,11 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
             type="text"
             value={userLocationInput}
             onChange={(e) => setUserLocationInput(e.target.value)}
-            placeholder={ (locationDataFromFeed || initialLocation) ? 
+            placeholder={ (latestReading?.latitude && latestReading?.longitude) ? 
+                          `${latestReading.latitude.toFixed(4)}, ${latestReading.longitude.toFixed(4)}` :
+                          ((locationDataFromFeed || initialLocation) ? 
                           (((locationDataFromFeed || initialLocation)?.address) || `${(locationDataFromFeed || initialLocation)?.latitude?.toFixed(4)}, ${(locationDataFromFeed || initialLocation)?.longitude?.toFixed(4)}`) 
-                          : "Enter your location"}
+                          : "Enter your location")}
             disabled={isLoading}
           />
         </div>
