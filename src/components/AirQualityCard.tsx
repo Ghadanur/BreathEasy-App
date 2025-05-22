@@ -1,7 +1,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadDialogTitle, DialogTrigger } from '@/components/ui/dialog'; // Renamed DialogTitle to ShadDialogTitle to avoid conflict
+import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadDialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 interface AirQualityCardProps {
@@ -35,21 +35,25 @@ export function AirQualityCard({ title, value, unit, icon: Icon, description, cl
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
-            <Icon className={cn("h-10 w-10 text-primary")} />
-            <ShadDialogTitle className="text-2xl text-primary">{title}</ShadDialogTitle> {/* Added text-primary */}
+            {/* Icon in dialog now uses the original card icon color, or defaults to popover-foreground */}
+            <Icon className={cn("h-10 w-10", color ? color : "text-popover-foreground")} />
+            {/* Dialog title uses default popover-foreground color */}
+            <ShadDialogTitle className="text-2xl">{title}</ShadDialogTitle>
           </div>
         </DialogHeader>
         <div className="py-4 text-center sm:text-left">
-          <div className="text-2xl font-bold text-primary">
+          {/* Value text uses default popover-foreground color, but remains large */}
+          <div className="text-5xl font-bold"> 
             {value}
-            {unit && <span className="text-xs text-primary/80 ml-1">{unit}</span>}
+            {/* Unit text uses default popover-foreground color */}
+            {unit && <span className="text-xl font-medium ml-1">{unit}</span>}
           </div>
           {description && (
-            <p className="text-sm text-primary/70 mt-2">{description}</p> /* Changed to text-primary/70 */
+            // Description text uses standard muted-foreground
+            <p className="text-sm text-muted-foreground mt-2">{description}</p> 
           )}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
