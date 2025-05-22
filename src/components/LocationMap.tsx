@@ -6,15 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import type L from 'leaflet';
+import type L from 'leaflet'; // Import L type for leaflet
 import { useEffect, useState } from 'react';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-
-interface LocationMapProps {
-  location: LocationData | null;
-  isLoading: boolean;
-  className?: string;
-}
 
 // This component is responsible for displaying the location on a map.
 export default function LocationMap({ location, isLoading, className }: LocationMapProps) {
@@ -27,7 +21,6 @@ export default function LocationMap({ location, isLoading, className }: Location
         const LModule = require('leaflet') as typeof L;
         
         // Common fix for Leaflet icon issues in Next.js/Webpack environments
-        // Even if using a custom icon, this can prevent errors from default logic.
         if (LModule.Icon.Default.prototype._getIconUrl) {
           delete LModule.Icon.Default.prototype._getIconUrl;
         }
@@ -90,8 +83,7 @@ export default function LocationMap({ location, isLoading, className }: Location
         <div key={`map-wrapper-${mapKey}`} className="h-[200px] rounded-md overflow-hidden">
           {typeof window !== 'undefined' && leafletIcon ? (
             <MapContainer
-              id={mapKey} 
-              key={mapKey} 
+              key={mapKey} // React key for reconciliation
               center={position}
               zoom={13}
               scrollWheelZoom={false}
@@ -119,4 +111,10 @@ export default function LocationMap({ location, isLoading, className }: Location
       </CardContent>
     </Card>
   );
+}
+
+interface LocationMapProps {
+  location: LocationData | null;
+  isLoading: boolean;
+  className?: string;
 }
