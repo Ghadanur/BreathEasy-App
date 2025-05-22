@@ -1,30 +1,20 @@
 
 import type { Metadata } from 'next';
-import { Roboto, Geist_Mono, EB_Garamond } from 'next/font/google';
+import { Inter, Geist_Mono } from 'next/font/google'; // Import Inter, remove Roboto and EB_Garamond
 import './globals.css';
 import 'leaflet/dist/leaflet.css'; // Import Leaflet CSS here
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
-const roboto = Roboto({
-  weight: ['300', '400', '500', '700'],
-  style: ['normal', 'italic'],
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-roboto',
+  variable: '--font-inter',
 });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
-});
-
-const ebGaramond = EB_Garamond({
-  weight: ['400', '500', '700', '800'], // Added more weights for flexibility
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-eb-garamond',
 });
 
 export const metadata: Metadata = {
@@ -42,10 +32,9 @@ export default function RootLayout({
       <body 
         suppressHydrationWarning={true}
         className={cn(
-          roboto.variable, 
+          inter.variable, // Use Inter
           geistMono.variable, 
-          ebGaramond.variable, 
-          "antialiased font-sans" 
+          "antialiased font-sans" // font-sans will now map to Inter via Tailwind config
         )}
       >
         {/* Orb Container & Page Background Gradient */}

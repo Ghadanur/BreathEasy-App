@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 import defaultTheme from 'tailwindcss/defaultTheme';
 
@@ -11,9 +12,9 @@ export default {
   theme: {
   	extend: {
       fontFamily: {
-        sans: ['var(--font-roboto)', ...defaultTheme.fontFamily.sans], 
+        sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans], // Change to Inter
         mono: ['var(--font-geist-mono)', ...defaultTheme.fontFamily.mono],
-        'eb-garamond': ['var(--font-eb-garamond)', ...defaultTheme.fontFamily.serif],
+        // eb-garamond is removed as Inter will be the primary sans-serif
       },
   		colors: {
   			background: 'hsl(var(--background))',
@@ -109,7 +110,7 @@ export default {
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-        'float': 'float 3.8s linear infinite', // Changed to linear, adjusted duration
+        'float': 'float 3.8s linear infinite', 
         'float-delayed': 'float-delayed 5s ease-in-out infinite', 
   		}
   	}

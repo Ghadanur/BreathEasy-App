@@ -7,10 +7,10 @@ import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudFog, Cloudy } from 'lucide-react';
+import { Thermometer, Droplets, Wind, CloudFog, Cloudy, MountainSnow } from 'lucide-react'; // MountainSnow for CO2 as Wind is used for app logo.
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
-import { useAirQualityReadings } from '@/hooks/useAirQualityReadings'; // Using the Firebase hook
+import { useAirQualityReadings } from '@/hooks/useAirQualityReadings';
 
 const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod => mod.default), {
   ssr: false,
@@ -19,7 +19,7 @@ const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod =>
 
 
 export function HomePageClient() {
-  const { readings: historicalData, loading: airQualityLoading, error: airQualityError } = useAirQualityReadings(96); // Fetch last 96 readings
+  const { readings: historicalData, loading: airQualityLoading, error: airQualityError } = useAirQualityReadings(96);
   const latestReading = historicalData && historicalData.length > 0 ? historicalData[0] : null;
 
   const [location, setLocation] = useState<LocationData | null>(null);
@@ -30,20 +30,18 @@ export function HomePageClient() {
       setLocation({
         latitude: latestReading.latitude,
         longitude: latestReading.longitude,
-        // If you have a geocoding service, you could fetch address here
+        // You could add a geocoding service here to get address if desired
       });
     } else if (!airQualityLoading && latestReading) {
+      // If there's a reading but no location data in it.
       setLocation(null);
-      // Potentially toast if location data is expected but missing from feed
-      // toast({
-      //   title: "Location Data Missing",
-      //   description: "Location data not available in the latest air quality reading from Firebase.",
-      //   variant: "default",
-      // });
     } else if (!airQualityLoading && !latestReading) {
+      // If no readings at all after loading.
       setLocation(null);
     }
-  }, [latestReading, airQualityLoading, toast]);
+    // Only re-run if latestReading or airQualityLoading changes.
+  }, [latestReading, airQualityLoading]);
+
 
   if (airQualityLoading && historicalData.length === 0) {
     return (
@@ -66,7 +64,8 @@ export function HomePageClient() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-black to-primary bg-clip-text text-transparent font-sans">
+        {/* Removed font-eb-garamond, it will now use font-sans (Inter) */}
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-black to-primary bg-clip-text text-transparent">
           Air Quality Dashboard
         </h1>
       </div>
@@ -94,11 +93,11 @@ export function HomePageClient() {
               title="CO₂"
               value={latestReading.co2.toFixed(0)}
               unit="ppm"
-              icon={Wind}
+              icon={MountainSnow} // Changed icon from Wind
               color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
               description="Carbon Dioxide Level"
             />
-            <AirQualityCard
+             <AirQualityCard
               title="PM2.5"
               value={latestReading.pm2_5.toFixed(1)}
               unit="μg/m³"
@@ -150,4 +149,3 @@ export function HomePageClient() {
     </div>
   );
 }
-
