@@ -49,8 +49,7 @@ export default function RootLayout({
       >
         <div className={cn(
           "min-h-screen flex flex-col",
-          "bg-gradient-to-br from-[hsl(180,45%,88%)] via-[hsl(50,70%,90%)] to-[hsl(95,35%,92%)]", // Updated gradient
-          "animate-float" // Added animation class
+          "bg-gradient-to-br from-[hsl(180,45%,88%)] via-[hsl(50,70%,90%)] to-[hsl(95,35%,92%)]" // Removed animate-float
         )}>
           {children}
         </div>
