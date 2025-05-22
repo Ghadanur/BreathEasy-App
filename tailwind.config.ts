@@ -94,7 +94,7 @@ export default {
             transform: 'translateY(0px) scale(1) rotate(0deg)',
           },
           '50%': { 
-            transform: 'translateY(-45px) scale(1.05) rotate(2deg)', // Increased Y translation
+            transform: 'translateY(-45px) scale(1.05) rotate(2deg)', 
           },
         },
         'float-delayed': {
@@ -102,15 +102,15 @@ export default {
             transform: 'translateY(0px) scale(1) rotate(0deg)',
           },
           '50%': { 
-            transform: 'translateY(40px) scale(0.95) rotate(-1deg)', // Increased Y translation
+            transform: 'translateY(40px) scale(0.95) rotate(-1deg)',
           },
         },
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-        'float': 'float 4s ease-in-out infinite', // Decreased duration
-        'float-delayed': 'float-delayed 5s ease-in-out infinite', // Decreased duration
+        'float': 'float 3.8s linear infinite', // Changed to linear, adjusted duration
+        'float-delayed': 'float-delayed 5s ease-in-out infinite', 
   		}
   	}
   },
