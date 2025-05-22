@@ -14,8 +14,8 @@ import { ScrollArea } from './ui/scroll-area';
 
 interface PersonalizedTipsProps {
   latestReading: AirQualityReading | null;
-  locationDataFromFeed: LocationData | null; // Specific location from the latest feed (Firebase reading)
-  initialLocation: LocationData | null; // General location (resolved from Firebase or GPS fallback)
+  locationDataFromFeed: LocationData | null;
+  initialLocation: LocationData | null;
 }
 
 export function PersonalizedTips({ latestReading, locationDataFromFeed, initialLocation }: PersonalizedTipsProps) {
@@ -26,14 +26,13 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
   const { toast } = useToast();
 
   useEffect(() => {
-    // Prioritize location from feed, then initialLocation (which could be channel's or GPS)
     const bestLocation = locationDataFromFeed || initialLocation;
-    if (bestLocation?.address) { // If we had reverse geocoding for address
+    if (bestLocation?.address) {
       setUserLocationInput(bestLocation.address);
     } else if (bestLocation?.latitude && bestLocation?.longitude) {
       setUserLocationInput(`${bestLocation.latitude.toFixed(4)}, ${bestLocation.longitude.toFixed(4)}`);
     } else {
-        setUserLocationInput(''); // Clear if no location data
+        setUserLocationInput('');
     }
   }, [locationDataFromFeed, initialLocation]);
 
@@ -43,7 +42,6 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
       return;
     }
     
-    // Determine the best location string to send to the AI
     let locationStringForAI = "Unknown Location";
     if (userLocationInput) {
         locationStringForAI = userLocationInput;
@@ -68,9 +66,9 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
         location: locationStringForAI,
         temperature: latestReading.temperature,
         humidity: latestReading.humidity,
-        co2Level: latestReading.co2, // Mapped from Firebase co2.value
-        particulateMatterPM2_5: latestReading.pm2_5, // Mapped from Firebase pm25.value
-        particulateMatterPM10: latestReading.pm10, // Mapped from Firebase pm10.value
+        co2Level: latestReading.co2,
+        particulateMatterPM2_5: latestReading.pm2_5,
+        particulateMatterPM10: latestReading.pm10,
       };
       
       const result: PersonalizedAirQualityTipsOutput = await getPersonalizedAirQualityTips(inputData);
@@ -100,7 +98,7 @@ export function PersonalizedTips({ latestReading, locationDataFromFeed, initialL
           Personalized Air Quality Tips
         </CardTitle>
         <CardDescription>
-          Get AI-powered suggestions to improve your air quality based on current conditions and your location. Data from Firebase.
+          Get AI-powered suggestions to improve your air quality based on current conditions and your location.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
