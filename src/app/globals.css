@@ -7,7 +7,7 @@
     --background: 0 0% 100% / 0; /* Transparent White */
     --foreground: 210 25% 25%; /* Dark Grayish Blue */
 
-    --card: 0 0% 100% / 0; /* Transparent White */
+    --card: 0 0% 100% / 0.15; /* Semi-transparent white for glassy effect */
     --card-foreground: 210 25% 25%; /* Dark Grayish Blue */
 
     --popover: 0 0% 100%; /* White */
@@ -57,7 +57,7 @@
     --background: 0 0% 0% / 0; /* Transparent Black */
     --foreground: 210 20% 90%;
 
-    --card: 0 0% 0% / 0; /* Transparent Black */
+    --card: 0 0% 10% / 0.15; /* Semi-transparent dark for glassy effect */
     --card-foreground: 210 20% 90%;
 
     --popover: 210 20% 15%;
