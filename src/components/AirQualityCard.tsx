@@ -40,14 +40,14 @@ export function AirQualityCard({ title, value, unit, icon: Icon, description, cl
           </div>
         </DialogHeader>
         <div className="py-4 text-center sm:text-left">
-          <div className="text-5xl font-bold"> {/* Increased font size */}
+          <div className="text-2xl font-bold"> {/* Matched to card content size */}
             {value}
-            {/* Using default text color for better contrast in dialog for unit */}
-            {unit && <span className="text-xl ml-2 align-baseline">{unit}</span>}
+            {/* Using default text color for better contrast in dialog for unit, size matched to card */}
+            {unit && <span className="text-xs ml-1">{unit}</span>}
           </div>
           {description && (
-            // Using default text color for better contrast in dialog for description
-            <p className="text-lg mt-2">{description}</p>
+            // Using default text color for better contrast in dialog for description, size matched to card
+            <p className="text-xs mt-2">{description}</p>
           )}
         </div>
       </DialogContent>
