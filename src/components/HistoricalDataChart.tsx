@@ -5,12 +5,14 @@ import type { AirQualityReading } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, BarChart, Bar, ResponsiveContainer } from 'recharts';
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, BarChart, Bar } from 'recharts'; // ResponsiveContainer removed as ChartContainer handles it
 import { format, parseISO } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Maximize2 } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+// Button and Maximize2 removed as they are no longer needed for the expand button
+// import { Button } from '@/components/ui/button';
+// import { Maximize2 } from 'lucide-react';
+// useIsMobile hook removed as the dialog is now for all devices
+// import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 interface HistoricalDataChartProps {
@@ -23,7 +25,7 @@ interface HistoricalDataChartProps {
 }
 
 export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', color = "hsl(var(--chart-1))", unit }: HistoricalDataChartProps) {
-  const isMobile = useIsMobile();
+  // const isMobile = useIsMobile(); // Removed
 
   if (!data || data.length === 0) {
     return (
@@ -64,9 +66,8 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          // Show fewer ticks in modal view to "expand" the line segments
           interval={isModal && formattedData.length > 10 ? Math.max(1, Math.floor(formattedData.length / 6)) : 'preserveStartEnd'}
-          tickFormatter={(value: string) => value} // Already formatted to HH:mm
+          tickFormatter={(value: string) => value}
         />
         <YAxis 
           tickLine={false}
@@ -82,7 +83,7 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
                         if (payload && payload.length > 0 && payload[0].payload.fullTimestamp) {
                           return payload[0].payload.fullTimestamp;
                         }
-                        return _label; // Fallback to the already formatted HH:mm timestamp if fullTimestamp isn't there
+                        return _label;
                       }}
                    />}
         />
@@ -103,32 +104,26 @@ export function HistoricalDataChart({ data, dataKey, title, chartType = 'line', 
   );
 
   return (
-    <Card className="shadow-lg col-span-1 md:col-span-2">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{title}</CardTitle>
-        {isMobile && (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Maximize2 className="h-5 w-5" />
-                <span className="sr-only">Expand chart</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[90vw] h-[85vh] flex flex-col p-4">
-              <DialogHeader className="pb-2">
-                <DialogTitle>{title}</DialogTitle>
-              </DialogHeader>
-              <div className="flex-grow">
-                {renderChart(true)}
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
-      </CardHeader>
-      <CardContent>
-        {renderChart(false)}
-      </CardContent>
-    </Card>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Card className="shadow-lg col-span-1 md:col-span-2 hover:shadow-xl transition-shadow duration-300 cursor-pointer">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{title}</CardTitle>
+            {/* Expand button removed */}
+          </CardHeader>
+          <CardContent>
+            {renderChart(false)}
+          </CardContent>
+        </Card>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[90vw] h-[85vh] flex flex-col p-4">
+        <DialogHeader className="pb-2">
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="flex-grow">
+          {renderChart(true)}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
-
