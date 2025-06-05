@@ -3,7 +3,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SemiCircleGauge } from '@/components/SemiCircleGauge';
+import { CircularGauge } from '@/components/CircularGauge'; // Changed from SemiCircleGauge
 import { cn } from '@/lib/utils';
 
 interface MainDialDisplayProps {
@@ -35,16 +35,16 @@ export function MainDialDisplay({
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col items-center pt-2"> {/* Removed justify-center */}
-        <SemiCircleGauge
+      <CardContent className="flex flex-col items-center pt-2">
+        <CircularGauge // Changed from SemiCircleGauge
           value={value}
           maxValue={maxValue}
           strokeColor={strokeColor}
           size={200}
           strokeWidth={20}
-          className="my-4" // Keeping this margin for spacing around the gauge
+          className="my-4"
         />
-        <div className="text-5xl font-bold text-card-foreground mt-4"> {/* Keeping this margin for spacing below gauge */}
+        <div className="text-5xl font-bold text-card-foreground mt-4">
           {displayValue}
           {unit && <span className="text-xl text-muted-foreground ml-1.5">{unit}</span>}
         </div>
@@ -52,4 +52,3 @@ export function MainDialDisplay({
     </Card>
   );
 }
-
