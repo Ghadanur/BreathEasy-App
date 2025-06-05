@@ -83,21 +83,23 @@ export function AirQualityCard({
             : "flex flex-col justify-between",
           className
         )}>
-          {isCircular && gaugeData ? ( // Ensure gaugeData is present for circular layout
+          {isCircular && gaugeData ? ( 
             <>
-              <div className="flex flex-col items-center mb-1">
-                <Icon className={cn("h-5 w-5 mb-0.5", iconClassName ? iconClassName : "text-muted-foreground")} />
-                <CardTitle className="text-xs font-medium text-center">{title}</CardTitle>
+              <div className="flex flex-col items-center pt-1"> 
+                <Icon className={cn("h-6 w-6", iconClassName ? iconClassName : "text-muted-foreground")} /> 
+                <CardTitle className="text-sm font-medium text-center mt-1"> 
+                  {title}
+                </CardTitle>
               </div>
-              <CardContent className="flex flex-col items-center justify-center p-0 mt-0 flex-grow">
-                <div className="relative transform scale-y-[-1] -rotate-90"> {/* Counter-transform for the gauge container */}
-                  <SemiCircleGauge {...gaugeData} size={80} strokeWidth={8} />
-                </div>
-                <div className="text-xl font-bold text-card-foreground mt-1">
-                  {displayValue}
-                  {unit && <span className="text-xs text-muted-foreground ml-0.5">{unit}</span>}
-                </div>
-              </CardContent>
+              
+              <div className="relative transform scale-y-[-1] -rotate-90 my-1.5"> 
+                <SemiCircleGauge {...gaugeData} size={80} strokeWidth={8} />
+              </div>
+              
+              <div className="text-2xl font-bold text-card-foreground pb-1"> 
+                {displayValue}
+                {unit && <span className="text-sm text-muted-foreground ml-1">{unit}</span>} 
+              </div>
             </>
           ) : (
             <>
@@ -106,7 +108,6 @@ export function AirQualityCard({
                 <Icon className={cn("h-6 w-6 text-muted-foreground", iconClassName)} />
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center pt-2 flex-grow">
-                {/* For non-circular cards, display value and optional description */}
                 <div className="text-2xl font-bold text-card-foreground">
                   {displayValue}
                   {unit && <span className="text-xs text-muted-foreground ml-1">{unit}</span>}
@@ -120,7 +121,7 @@ export function AirQualityCard({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
-            <Icon className={cn("h-10 w-10", iconClassName ? iconClassName : "text-muted-foreground")} />
+            <Icon className={cn("h-10 w-10", iconClassName ? iconClassName : "text-primary")} />
             <ShadDialogTitle className="text-2xl text-card-foreground">{title}</ShadDialogTitle>
           </div>
         </DialogHeader>
@@ -137,3 +138,4 @@ export function AirQualityCard({
     </Dialog>
   );
 }
+
