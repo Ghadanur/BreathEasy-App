@@ -29,9 +29,9 @@ export function MainDialDisplay({
 
   return (
     <Card className="shadow-xl flex flex-col items-center justify-center p-6 bg-card/80 rounded-full w-96 h-96">
-      <CardHeader className="flex flex-col items-center space-y-2 pb-3">
-        {Icon && <Icon className={cn("h-10 w-10", iconClassName)} />}
-        <CardTitle className="text-2xl font-semibold text-center text-card-foreground">
+      <CardHeader className="flex flex-col items-center space-y-1 pb-2"> {/* Reduced space-y and pb */}
+        {Icon && <Icon className={cn("h-8 w-8", iconClassName)} />} {/* Reduced icon size */}
+        <CardTitle className="text-xl font-semibold text-center text-card-foreground"> {/* Reduced title size */}
           {title}
         </CardTitle>
       </CardHeader>
@@ -40,16 +40,15 @@ export function MainDialDisplay({
           value={value}
           maxValue={maxValue}
           strokeColor={strokeColor}
-          size={200}
-          strokeWidth={20}
-          className="my-4"
+          size={160} // Reduced gauge size
+          strokeWidth={16} // Reduced stroke width
+          className="my-3" // Adjusted margin
         />
-        <div className="text-5xl font-bold text-card-foreground mt-4">
+        <div className="text-4xl font-bold text-card-foreground mt-3"> {/* Reduced value size and margin */}
           {displayValue}
-          {unit && <span className="text-xl text-muted-foreground ml-1.5">{unit}</span>}
+          {unit && <span className="text-lg text-muted-foreground ml-1.5">{unit}</span>} {/* Reduced unit size */}
         </div>
       </CardContent>
     </Card>
   );
 }
-
