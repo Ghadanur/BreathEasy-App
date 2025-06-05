@@ -30,9 +30,9 @@ interface DialConfig {
 }
 
 const tempGaugeColor = "hsl(30, 90%, 60%)"; // Orange
-const humidityGaugeColor = "hsl(210, 70%, 50%)"; // Primary Blue (resolved from --primary)
-const pm25GaugeColor = "hsl(270, 60%, 65%)"; // Purple (resolved from --chart-4)
-const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo (resolved from --chart-3)
+const humidityGaugeColor = "hsl(210, 70%, 50%)"; // Primary Blue 
+const pm25GaugeColor = "hsl(270, 60%, 65%)"; // Purple 
+const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo 
 
 
 const getCo2ConfigValues = (co2Value: number): { iconClassName: string; strokeColor: string } => {
@@ -93,11 +93,11 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
 };
 
 const chartColorMapping: Record<keyof typeof DIAL_CONFIGS, string | ((value: number) => string)> = {
-  temperature: "hsl(210, 70%, 50%)", // Chart-1 / Primary Blue
-  humidity: "hsl(270, 60%, 65%)",    // Chart-4 / Purple
-  co2: (value: number) => getCo2ConfigValues(value).strokeColor, // Dynamic based on value
-  pm2_5: "hsl(240, 60%, 60%)",      // Chart-3 / Indigo
-  pm10: "hsl(180, 60%, 40%)",       // Accent / Deep Turquoise
+  temperature: "hsl(210, 70%, 50%)", // Primary Blue
+  humidity: "hsl(270, 60%, 65%)",    // Purple
+  co2: (value: number) => getCo2ConfigValues(value).strokeColor, 
+  pm2_5: "hsl(240, 60%, 60%)",      // Indigo
+  pm10: "hsl(180, 60%, 40%)",       // Deep Turquoise
 };
 
 
@@ -152,7 +152,6 @@ export function HomePageClient() {
     currentIconClassNameForMainDial = getCo2ConfigValues(currentValueForMainDial).iconClassName;
   }
 
-  // Config for the chart associated with the active dial
   const activeChartConfig = DIAL_CONFIGS[activeDialKey];
 
 
@@ -164,11 +163,11 @@ export function HomePageClient() {
         </h1>
       </div>
 
-      {/* Main Display: Dial (Left) and Active Chart (Right) */}
+      {/* Expanded View: Dial (Left) + Tips and Active Chart (Right) */}
       {latestReading && activeDialKey && currentMainDialConfig && activeChartConfig && (
          <section className="mb-6 md:mb-8 flex flex-col md:flex-row md:justify-around items-center md:items-start gap-6 md:gap-8">
-          {/* Left Column: Dial */}
-          <div className="flex flex-col items-center">
+          {/* Left Column: Dial + Personalized Tips */}
+          <div className="flex flex-col items-center gap-6 md:gap-8 w-full md:w-auto">
             <MainDialDisplay
               title={currentMainDialConfig.title}
               value={currentValueForMainDial}
@@ -178,6 +177,12 @@ export function HomePageClient() {
               icon={currentMainDialConfig.icon}
               iconClassName={currentIconClassNameForMainDial}
             />
+            <div className="w-full max-w-md md:w-96">
+              <PersonalizedTips
+                latestReading={latestReading}
+                derivedLocation={location}
+              />
+            </div>
           </div>
 
           {/* Right Column: Historical Chart for Active Metric */}
@@ -246,7 +251,6 @@ export function HomePageClient() {
                 let colorForChart: string;
                 const colorMapEntry = chartColorMapping[key];
                 if (typeof colorMapEntry === 'function') {
-                  // For CO2, the color depends on the latest reading's value
                   colorForChart = colorMapEntry(latestReading?.[key as keyof AirQualityReading] as number ?? 0);
                 } else {
                   colorForChart = colorMapEntry;
@@ -269,12 +273,7 @@ export function HomePageClient() {
         )}
       </section>
 
-      <section>
-        <PersonalizedTips
-          latestReading={latestReading}
-          derivedLocation={location} 
-        />
-      </section>
+      {/* PersonalizedTips was here, now moved to expanded view */}
 
       <footer className="text-center py-8 text-sm text-muted-foreground">
         <p>&copy; {new Date().getFullYear()} BreatheEasy Mobile. All rights reserved.</p>
@@ -283,3 +282,4 @@ export function HomePageClient() {
     </div>
   );
 }
+
