@@ -151,12 +151,8 @@ export function HomePageClient() {
     currentIconClassNameForMainDial = getCo2ConfigValues(currentValueForMainDial).iconClassName;
   }
 
-  const activeExpandedCardConfig = DIAL_CONFIGS[activeDialKey];
-  const activeExpandedCardValue = latestReading && activeExpandedCardConfig ? latestReading[activeDialKey as keyof AirQualityReading] as number : 0;
-  let activeExpandedCardIconClassName = activeExpandedCardConfig?.iconClassName;
-  if (activeDialKey === 'co2' && activeExpandedCardConfig) {
-    activeExpandedCardIconClassName = getCo2ConfigValues(activeExpandedCardValue).iconClassName;
-  }
+  // Config for the chart associated with the active dial
+  const activeChartConfig = DIAL_CONFIGS[activeDialKey];
 
 
   return (
@@ -167,11 +163,11 @@ export function HomePageClient() {
         </h1>
       </div>
 
-      {/* Main Circular Dial, Expanded Card, and its Historical Chart */}
-      {latestReading && activeDialKey && activeExpandedCardConfig && currentMainDialConfig && (
+      {/* Main Display: Dial (Left) and Active Chart (Right) */}
+      {latestReading && activeDialKey && currentMainDialConfig && activeChartConfig && (
          <section className="mb-6 md:mb-8 flex flex-col md:flex-row md:justify-around items-center md:items-start gap-6 md:gap-8">
-          {/* Left Column: Dial + Expanded Card */}
-          <div className="flex flex-col items-center gap-6">
+          {/* Left Column: Dial */}
+          <div className="flex flex-col items-center">
             <MainDialDisplay
               title={currentMainDialConfig.title}
               value={currentValueForMainDial}
@@ -181,27 +177,17 @@ export function HomePageClient() {
               icon={currentMainDialConfig.icon}
               iconClassName={currentIconClassNameForMainDial}
             />
-            <div className="w-full max-w-xs sm:max-w-sm md:w-72">
-              <AirQualityCard
-                title={activeExpandedCardConfig.title}
-                value={activeExpandedCardValue}
-                unit={activeExpandedCardConfig.unit}
-                icon={activeExpandedCardConfig.icon}
-                iconClassName={activeExpandedCardIconClassName}
-                description={activeExpandedCardConfig.description}
-              />
-            </div>
           </div>
 
-          {/* Right Column: Historical Chart */}
+          {/* Right Column: Historical Chart for Active Metric */}
           {historicalData.length > 0 && (
             <div className="w-full md:flex-1 md:max-w-xl lg:max-w-2xl mt-6 md:mt-0">
                 <HistoricalDataChart
                     data={historicalData}
                     dataKey={activeDialKey as keyof AirQualityReading}
-                    title={`${activeExpandedCardConfig.title} Trend`}
+                    title={`${activeChartConfig.title} Trend`}
                     color={currentStrokeColorForMainDial} 
-                    unit={activeExpandedCardConfig.unit}
+                    unit={activeChartConfig.unit}
                 />
             </div>
           )}
@@ -209,13 +195,11 @@ export function HomePageClient() {
       )}
 
 
-      {/* Grid of Other Selectable Cards */}
+      {/* Grid of All Rectangular Cards */}
       <section className="flex flex-wrap justify-center gap-4 md:gap-6">
         {latestReading ? (
           <>
-            {Object.entries(DIAL_CONFIGS)
-              .filter(([key]) => key !== activeDialKey) 
-              .map(([key, config]) => {
+            {Object.entries(DIAL_CONFIGS).map(([key, config]) => {
                 const cardValue = latestReading[key as keyof AirQualityReading] as number;
                 let iconClass = config.iconClassName;
                 
