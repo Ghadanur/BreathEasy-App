@@ -3,7 +3,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CircularGauge } from '@/components/CircularGauge'; // Changed from SemiCircleGauge
+import { CircularGauge } from '@/components/CircularGauge';
 import { cn } from '@/lib/utils';
 
 interface MainDialDisplayProps {
@@ -28,7 +28,7 @@ export function MainDialDisplay({
   const displayValue = value.toFixed(title === "CO₂" || title === "PM2.5" || title === "PM10" || title.includes("PM") ? 0 : 1);
 
   return (
-    <Card className="shadow-xl flex flex-col items-center justify-center p-6 bg-card/80">
+    <Card className="shadow-xl flex flex-col items-center justify-center p-6 bg-card/80 rounded-full w-96 h-96">
       <CardHeader className="flex flex-col items-center space-y-2 pb-3">
         {Icon && <Icon className={cn("h-10 w-10", iconClassName)} />}
         <CardTitle className="text-2xl font-semibold text-center text-card-foreground">
@@ -36,7 +36,7 @@ export function MainDialDisplay({
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center pt-2">
-        <CircularGauge // Changed from SemiCircleGauge
+        <CircularGauge
           value={value}
           maxValue={maxValue}
           strokeColor={strokeColor}
@@ -52,3 +52,4 @@ export function MainDialDisplay({
     </Card>
   );
 }
+
