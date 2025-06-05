@@ -131,16 +131,23 @@ export function HomePageClient() {
     );
   }
   
-  const currentDialMetricConfig = DIAL_CONFIGS[activeDialKey];
-  const currentValueForDial = latestReading && currentDialMetricConfig ? latestReading[activeDialKey as keyof AirQualityReading] as number : 0;
+  const currentMainDialConfig = DIAL_CONFIGS[activeDialKey];
+  const currentValueForMainDial = latestReading && currentMainDialConfig ? latestReading[activeDialKey as keyof AirQualityReading] as number : 0;
   
-  let currentStrokeColorForDial = typeof currentDialMetricConfig?.baseStrokeColor === 'function'
-    ? currentDialMetricConfig.baseStrokeColor(currentValueForDial)
-    : currentDialMetricConfig?.baseStrokeColor || "hsl(var(--muted))";
+  let currentStrokeColorForMainDial = typeof currentMainDialConfig?.baseStrokeColor === 'function'
+    ? currentMainDialConfig.baseStrokeColor(currentValueForMainDial)
+    : currentMainDialConfig?.baseStrokeColor || "hsl(var(--muted))";
 
-  let currentIconClassNameForDial = currentDialMetricConfig?.iconClassName;
+  let currentIconClassNameForMainDial = currentMainDialConfig?.iconClassName;
   if (activeDialKey === 'co2') {
-    currentIconClassNameForDial = getCo2ConfigValues(currentValueForDial).iconClassName;
+    currentIconClassNameForMainDial = getCo2ConfigValues(currentValueForMainDial).iconClassName;
+  }
+
+  const activeExpandedCardConfig = DIAL_CONFIGS[activeDialKey];
+  const activeExpandedCardValue = latestReading && activeExpandedCardConfig ? latestReading[activeDialKey as keyof AirQualityReading] as number : 0;
+  let activeExpandedCardIconClassName = activeExpandedCardConfig?.iconClassName;
+  if (activeDialKey === 'co2') {
+    activeExpandedCardIconClassName = getCo2ConfigValues(activeExpandedCardValue).iconClassName;
   }
 
 
@@ -152,47 +159,68 @@ export function HomePageClient() {
         </h1>
       </div>
 
-      {latestReading && currentDialMetricConfig && (
-        <section className="mb-6 md:mb-8">
+      {/* Main Circular Dial Display */}
+      {latestReading && currentMainDialConfig && (
+        <section className="mb-6 md:mb-8 flex justify-center">
           <MainDialDisplay
-            title={currentDialMetricConfig.title}
-            value={currentValueForDial}
-            maxValue={currentDialMetricConfig.maxValue}
-            strokeColor={currentStrokeColorForDial}
-            unit={currentDialMetricConfig.unit}
-            icon={currentDialMetricConfig.icon}
-            iconClassName={currentIconClassNameForDial}
+            title={currentMainDialConfig.title}
+            value={currentValueForMainDial}
+            maxValue={currentMainDialConfig.maxValue}
+            strokeColor={currentStrokeColorForMainDial}
+            unit={currentMainDialConfig.unit}
+            icon={currentMainDialConfig.icon}
+            iconClassName={currentIconClassNameForMainDial}
           />
         </section>
       )}
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
+      {/* Expanded Rectangular Card for the Active Metric */}
+      {latestReading && activeDialKey && activeExpandedCardConfig && (
+         <section className="mb-6 md:mb-8 flex justify-center">
+          <div className="w-full max-w-xs sm:max-w-sm md:w-64"> {/* Constrain width */}
+            <AirQualityCard
+              title={activeExpandedCardConfig.title}
+              value={activeExpandedCardValue}
+              unit={activeExpandedCardConfig.unit}
+              icon={activeExpandedCardConfig.icon}
+              iconClassName={activeExpandedCardIconClassName}
+              description={activeExpandedCardConfig.description}
+              // No onClick needed to change activeDialKey as it's already active
+              // No specific "active" styling (like a ring) needed here as its presence implies it's active
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Grid of Other Selectable Cards */}
+      <section className="flex flex-wrap justify-center gap-4 md:gap-6">
         {latestReading ? (
           <>
-            {Object.entries(DIAL_CONFIGS).map(([key, config]) => {
-              const cardValue = latestReading[key as keyof AirQualityReading] as number;
-              let iconClass = config.iconClassName;
-              let chartStrokeColor = typeof config.baseStrokeColor === 'function' ? config.baseStrokeColor(cardValue) : config.baseStrokeColor;
-              
-              if (key === 'co2') {
-                const co2Vals = getCo2ConfigValues(cardValue);
-                iconClass = co2Vals.iconClassName;
-                // chartStrokeColor is already handled by baseStrokeColor being a function for CO2
-              }
+            {Object.entries(DIAL_CONFIGS)
+              .filter(([key]) => key !== activeDialKey) // Filter out the card that is currently "expanded"
+              .map(([key, config]) => {
+                const cardValue = latestReading[key as keyof AirQualityReading] as number;
+                let iconClass = config.iconClassName;
+                
+                if (key === 'co2') {
+                  const co2Vals = getCo2ConfigValues(cardValue);
+                  iconClass = co2Vals.iconClassName;
+                }
 
-              return (
-                <AirQualityCard
-                  key={key}
-                  title={config.title}
-                  value={cardValue}
-                  unit={config.unit}
-                  icon={config.icon}
-                  iconClassName={iconClass}
-                  description={config.description}
-                  onClick={() => setActiveDialKey(key as keyof typeof DIAL_CONFIGS)}
-                  className={cn(activeDialKey === key && "ring-2 ring-primary shadow-primary/50")}
-                />
-              );
+                return (
+                  <div key={key} className="w-full max-w-xs sm:max-w-sm md:w-60"> {/* Wrapper for consistent width */}
+                    <AirQualityCard
+                      title={config.title}
+                      value={cardValue}
+                      unit={config.unit}
+                      icon={config.icon}
+                      iconClassName={iconClass}
+                      description={config.description}
+                      onClick={() => setActiveDialKey(key as keyof typeof DIAL_CONFIGS)}
+                      // No active ring styling needed here as the active card is shown separately
+                    />
+                  </div>
+                );
             })}
           </>
         ) : (
@@ -232,3 +260,5 @@ export function HomePageClient() {
     </div>
   );
 }
+
+    
