@@ -18,33 +18,98 @@ interface MainDialDisplayProps {
 }
 
 interface Dimensions {
-  cardSize: string;
-  cardPadding: string;
-  cardGap: string;
-  iconSize: string;
-  titleSize: string;
-  gaugeSize: number;
-  gaugeStrokeWidth: number;
-  gaugeMargin: string;
-  valueSize: string;
-  unitSize: string;
-  valueMarginTop: string;
+  // Tailwind classes for the card's container
+  cardContainerClasses: string; 
+  
+  // Base size for the gauge, drives other internal element sizes
+  baseGaugeSize: number; 
+  
+  // Calculated numeric values for internal elements
+  iconSizePx: number;
+  titleFontSizePx: number;
+  gaugeStrokeWidthPx: number;
+  valueFontSizePx: number;
+  unitFontSizePx: number;
+
+  // Tailwind classes for internal layout/spacing
+  cardHeaderPadding: string;
+  cardContentPadding: string;
+  cardInternalGap: string; 
+  gaugeMarginClasses: string;
+  valueContainerMarginTop: string;
 }
 
-// Default dimensions (for XL screens and up)
-const defaultDims: Dimensions = {
-  cardSize: 'w-96 h-96',
-  cardPadding: 'p-4',
-  cardGap: 'gap-3',
-  iconSize: 'h-10 w-10',
-  titleSize: 'text-2xl',
-  gaugeSize: 180,
-  gaugeStrokeWidth: 18,
-  gaugeMargin: 'my-2',
-  valueSize: 'text-5xl',
-  unitSize: 'text-xl',
-  valueMarginTop: 'mt-2',
+// Define base dimensions for the largest size (e.g., XL)
+// Card size: w-96 h-96 (384px). Base Gauge: 180px.
+const xlDimsConfig = {
+  cardContainerClasses: 'w-96 h-96',
+  cardHeaderPadding: 'p-0', // No padding for header itself
+  cardContentPadding: 'p-0', // No padding for content itself
+  cardInternalGap: 'gap-3', // Gap between header and content blocks
+  baseGaugeSize: 180,
+  iconSizeRatio: 1/4.5,     // Icon size relative to baseGaugeSize
+  titleFontSizeRatio: 1/7.5, // Title font size relative to baseGaugeSize
+  strokeWidthRatio: 1/10,   // Gauge stroke width relative to baseGaugeSize
+  valueFontSizeRatio: 1/3.75, // Value font size relative to baseGaugeSize
+  unitFontSizeRatio: 1/9,     // Unit font size relative to baseGaugeSize
+  gaugeMarginClasses: 'my-2',
+  valueContainerMarginTop: 'mt-2',
 };
+
+const calculateDimensions = (screenWidth: number): Dimensions => {
+  let config = xlDimsConfig; // Start with XL as default
+
+  // Determine base config based on screen width
+  if (screenWidth < 640) { // xs
+    config = {
+      ...xlDimsConfig,
+      cardContainerClasses: 'w-56 h-56',
+      baseGaugeSize: 100,
+      cardInternalGap: 'gap-1',
+      gaugeMarginClasses: 'my-1',
+      valueContainerMarginTop: 'mt-1',
+    };
+  } else if (screenWidth < 768) { // sm
+    config = {
+      ...xlDimsConfig,
+      cardContainerClasses: 'w-64 h-64',
+      baseGaugeSize: 120,
+      cardInternalGap: 'gap-2',
+      gaugeMarginClasses: 'my-1',
+      valueContainerMarginTop: 'mt-1',
+    };
+  } else if (screenWidth < 1024) { // md
+    config = {
+      ...xlDimsConfig,
+      cardContainerClasses: 'w-72 h-72',
+      baseGaugeSize: 140,
+      cardInternalGap: 'gap-2',
+    };
+  } else if (screenWidth < 1280) { // lg
+    config = {
+      ...xlDimsConfig,
+      cardContainerClasses: 'w-80 h-80',
+      baseGaugeSize: 160,
+    };
+  }
+  // For xl and up, the initial `config` (xlDimsConfig) is used.
+
+  return {
+    cardContainerClasses: cn(config.cardContainerClasses, 'p-4'), // Apply overall padding to the card
+    cardHeaderPadding: config.cardHeaderPadding,
+    cardContentPadding: config.cardContentPadding,
+    cardInternalGap: config.cardInternalGap,
+    baseGaugeSize: config.baseGaugeSize,
+    iconSizePx: Math.round(config.baseGaugeSize * config.iconSizeRatio),
+    titleFontSizePx: Math.round(config.baseGaugeSize * config.titleFontSizeRatio),
+    gaugeStrokeWidthPx: Math.round(config.baseGaugeSize * config.strokeWidthRatio),
+    valueFontSizePx: Math.round(config.baseGaugeSize * config.valueFontSizeRatio),
+    unitFontSizePx: Math.round(config.baseGaugeSize * config.unitFontSizeRatio),
+    gaugeMarginClasses: config.gaugeMarginClasses,
+    valueContainerMarginTop: config.valueContainerMarginTop,
+  };
+};
+
 
 export function MainDialDisplay({
   title,
@@ -55,47 +120,19 @@ export function MainDialDisplay({
   maxValue,
   strokeColor,
 }: MainDialDisplayProps) {
-  const [dims, setDims] = useState<Dimensions>(defaultDims);
+  // Initialize with default dimensions for server render / no window
+  const [dims, setDims] = useState<Dimensions>(calculateDimensions(1280)); // Default to XL size
 
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth;
-      if (width < 640) { // Base (xs)
-        setDims({
-          cardSize: 'w-56 h-56', cardPadding: 'p-2', cardGap: 'gap-1',
-          iconSize: 'h-6 w-6', titleSize: 'text-base',
-          gaugeSize: 100, gaugeStrokeWidth: 10, gaugeMargin: 'my-1',
-          valueSize: 'text-2xl', unitSize: 'text-xs', valueMarginTop: 'mt-1',
-        });
-      } else if (width < 768) { // sm
-        setDims({
-          cardSize: 'w-64 h-64', cardPadding: 'p-3', cardGap: 'gap-2',
-          iconSize: 'h-7 w-7', titleSize: 'text-lg',
-          gaugeSize: 120, gaugeStrokeWidth: 12, gaugeMargin: 'my-1',
-          valueSize: 'text-3xl', unitSize: 'text-sm', valueMarginTop: 'mt-1',
-        });
-      } else if (width < 1024) { // md
-        setDims({
-          cardSize: 'w-72 h-72', cardPadding: 'p-3', cardGap: 'gap-2',
-          iconSize: 'h-8 w-8', titleSize: 'text-xl',
-          gaugeSize: 140, gaugeStrokeWidth: 14, gaugeMargin: 'my-2',
-          valueSize: 'text-4xl', unitSize: 'text-base', valueMarginTop: 'mt-2',
-        });
-      } else if (width < 1280) { // lg
-        setDims({
-          cardSize: 'w-80 h-80', cardPadding: 'p-4', cardGap: 'gap-3',
-          iconSize: 'h-8 w-8', titleSize: 'text-xl',
-          gaugeSize: 160, gaugeStrokeWidth: 16, gaugeMargin: 'my-2',
-          valueSize: 'text-4xl', unitSize: 'text-lg', valueMarginTop: 'mt-2',
-        });
-      } else { // xl and up
-        setDims(defaultDims);
-      }
+      setDims(calculateDimensions(window.innerWidth));
     };
 
-    handleResize(); // Set initial dimensions
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (typeof window !== 'undefined') {
+      handleResize(); // Set initial dimensions based on client's screen width
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
   }, []);
 
   const displayValue = value.toFixed(title === "CO₂" || title === "PM2.5" || title === "PM10" || title.includes("PM") ? 0 : 1);
@@ -103,38 +140,51 @@ export function MainDialDisplay({
   return (
     <Card className={cn(
       "shadow-xl rounded-full flex flex-col items-center justify-center bg-card/80 transition-all duration-300 ease-in-out",
-      dims.cardSize,
-      dims.cardPadding,
-      dims.cardGap
+      dims.cardContainerClasses, // This includes w-X h-X and overall padding
+      dims.cardInternalGap      // This adds gap between header and content blocks
     )}>
-      <CardHeader className={cn("flex flex-col items-center space-y-1 p-0")}>
-        {Icon && <Icon className={cn(dims.iconSize, iconClassName, "transition-all duration-300 ease-in-out")} />}
-        <CardTitle className={cn(
-          "font-semibold text-center text-card-foreground transition-all duration-300 ease-in-out",
-          dims.titleSize
-        )}>
+      <CardHeader className={cn(
+        "flex flex-col items-center space-y-1 transition-all duration-300 ease-in-out",
+        dims.cardHeaderPadding // Should be p-0
+      )}>
+        {Icon && (
+          <Icon 
+            className={cn(iconClassName, "transition-all duration-300 ease-in-out")} 
+            style={{ width: `${dims.iconSizePx}px`, height: `${dims.iconSizePx}px`}}
+          />
+        )}
+        <CardTitle 
+          className={cn("font-semibold text-center text-card-foreground transition-all duration-300 ease-in-out")}
+          style={{ fontSize: `${dims.titleFontSizePx}px` }}
+        >
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className={cn("flex flex-col items-center p-0")}>
+      <CardContent className={cn(
+        "flex flex-col items-center transition-all duration-300 ease-in-out",
+        dims.cardContentPadding // Should be p-0
+      )}>
         <CircularGauge
           value={value}
           maxValue={maxValue}
           strokeColor={strokeColor}
-          size={dims.gaugeSize}
-          strokeWidth={dims.gaugeStrokeWidth}
-          className={cn(dims.gaugeMargin, "transition-all duration-300 ease-in-out")}
+          size={dims.baseGaugeSize}
+          strokeWidth={dims.gaugeStrokeWidthPx}
+          className={cn(dims.gaugeMarginClasses, "transition-all duration-300 ease-in-out")}
         />
-        <div className={cn(
-          "font-bold text-card-foreground transition-all duration-300 ease-in-out",
-          dims.valueSize,
-          dims.valueMarginTop
-        )}>
+        <div 
+          className={cn("font-bold text-card-foreground transition-all duration-300 ease-in-out", dims.valueContainerMarginTop)}
+          style={{ fontSize: `${dims.valueFontSizePx}px` }}
+        >
           {displayValue}
-          {unit && <span className={cn(
-            "text-muted-foreground ml-1.5 transition-all duration-300 ease-in-out",
-            dims.unitSize
-            )}>{unit}</span>}
+          {unit && (
+            <span 
+              className={cn("text-muted-foreground ml-1.5 transition-all duration-300 ease-in-out")}
+              style={{ fontSize: `${dims.unitFontSizePx}px` }}
+            >
+              {unit}
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>
