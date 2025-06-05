@@ -22,13 +22,30 @@ export interface PersonalizedTip {
   text: string;
 }
 
+// Structure for individual sensor metric from Firebase
+export interface FirebaseSensorMetric {
+  value: number;
+  unit?: string;
+  name?: string;
+  description?: string;
+  color?: string; // e.g., "rgb(239, 68, 68)"
+  bgColor?: string; // e.g., "rgba(239, 68, 68, 0.2)"
+}
+
+// Structure for location data from Firebase
+export interface FirebaseLocation {
+  lat: number;
+  lng: number;
+}
+
 // This is the expected structure from Firebase for a single reading entry
+// based on the provided ESP32 C++ code.
 export interface FirebaseRawReading {
-  temp: { value: number; unit?: string; name?: string; description?: string };
-  humidity: { value: number; unit?: string; name?: string; description?: string };
-  co2: { value: number; unit?: string; name?: string; description?: string };
-  pm25: { value: number; unit?: string; name?: string; description?: string }; // Note: 'pm25' in Firebase
-  pm10: { value: number; unit?: string; name?: string; description?: string };
-  location: { lat: number; lng: number };
-  timestamp: string; // "YYYY-MM-DD HH:MM:SS"
+  temp: FirebaseSensorMetric;
+  humidity: FirebaseSensorMetric;
+  co2: FirebaseSensorMetric;
+  pm25: FirebaseSensorMetric;
+  pm10: FirebaseSensorMetric;
+  location: FirebaseLocation;
+  timestamp: string; // Expected format "YYYY-MM-DD HH:MM:SS"
 }
