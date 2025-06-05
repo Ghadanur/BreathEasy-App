@@ -54,8 +54,8 @@ export function HistoricalDataChart({ data, dataKey, title, color = "hsl(var(--c
     <ChartContainer 
       config={chartDisplayConfig} 
       className={cn(
-        "w-full", // Ensure it takes full width of its parent
-        isModal ? "h-[70vh]" : "" // Removed h-[300px], rely on aspect-video (default) or parent height
+        "w-full", 
+        isModal ? "h-[70vh]" : "aspect-[16/7]" // Adjusted aspect ratio for non-modal chart
       )}
     >
       <ChartComponent data={formattedData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
