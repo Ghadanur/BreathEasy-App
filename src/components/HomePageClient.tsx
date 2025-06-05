@@ -91,6 +91,14 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
   },
 };
 
+const chartColorMapping: Record<keyof typeof DIAL_CONFIGS, string | ((value: number) => string)> = {
+  temperature: "hsl(var(--chart-1))",
+  humidity: "hsl(var(--chart-4))",
+  co2: (value: number) => getCo2ConfigValues(value).strokeColor,
+  pm2_5: "hsl(var(--chart-3))",
+  pm10: "hsl(var(--accent))",
+};
+
 
 export function HomePageClient() {
   const { readings: historicalData, loading: airQualityLoading, error: airQualityError } = useAirQualityReadings(96);
@@ -106,9 +114,9 @@ export function HomePageClient() {
         longitude: latestReading.longitude,
       });
     } else if (!airQualityLoading && latestReading) {
-      setLocation(null); // Explicitly set to null if no coordinates
+      setLocation(null); 
     } else if (!airQualityLoading && !latestReading) {
-        setLocation(null); // Also set to null if no readings at all
+        setLocation(null); 
     }
   }, [latestReading, airQualityLoading]);
 
@@ -174,10 +182,10 @@ export function HomePageClient() {
         </section>
       )}
 
-      {/* Expanded Rectangular Card for the Active Metric */}
+      {/* Expanded Rectangular Card & Historical Chart for the Active Metric */}
       {latestReading && activeDialKey && activeExpandedCardConfig && (
-         <section className="mb-6 md:mb-8 flex justify-center">
-          <div className="w-full max-w-xs sm:max-w-sm md:w-64"> {/* Constrain width */}
+         <section className="mb-6 md:mb-8 flex flex-col items-center gap-4 md:gap-6">
+          <div className="w-full max-w-xs sm:max-w-sm md:w-64">
             <AirQualityCard
               title={activeExpandedCardConfig.title}
               value={activeExpandedCardValue}
@@ -185,10 +193,19 @@ export function HomePageClient() {
               icon={activeExpandedCardConfig.icon}
               iconClassName={activeExpandedCardIconClassName}
               description={activeExpandedCardConfig.description}
-              // No onClick needed to change activeDialKey as it's already active
-              // No specific "active" styling (like a ring) needed here as its presence implies it's active
             />
           </div>
+          {historicalData.length > 0 && (
+            <div className="w-full max-w-md md:max-w-lg lg:max-w-xl">
+                <HistoricalDataChart
+                    data={historicalData}
+                    dataKey={activeDialKey as keyof AirQualityReading}
+                    title={`${activeExpandedCardConfig.title} Trend`}
+                    color={currentStrokeColorForMainDial} 
+                    unit={activeExpandedCardConfig.unit}
+                />
+            </div>
+          )}
         </section>
       )}
 
@@ -197,7 +214,7 @@ export function HomePageClient() {
         {latestReading ? (
           <>
             {Object.entries(DIAL_CONFIGS)
-              .filter(([key]) => key !== activeDialKey) // Filter out the card that is currently "expanded"
+              .filter(([key]) => key !== activeDialKey) 
               .map(([key, config]) => {
                 const cardValue = latestReading[key as keyof AirQualityReading] as number;
                 let iconClass = config.iconClassName;
@@ -208,7 +225,7 @@ export function HomePageClient() {
                 }
 
                 return (
-                  <div key={key} className="w-full max-w-xs sm:max-w-sm md:w-60"> {/* Wrapper for consistent width */}
+                  <div key={key} className="w-full max-w-xs sm:max-w-sm md:w-60"> 
                     <AirQualityCard
                       title={config.title}
                       value={cardValue}
@@ -217,7 +234,6 @@ export function HomePageClient() {
                       iconClassName={iconClass}
                       description={config.description}
                       onClick={() => setActiveDialKey(key as keyof typeof DIAL_CONFIGS)}
-                      // No active ring styling needed here as the active card is shown separately
                     />
                   </div>
                 );
@@ -235,11 +251,32 @@ export function HomePageClient() {
         <h2 className="text-2xl font-semibold">Historical Trends</h2>
         {historicalData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <HistoricalDataChart data={historicalData} dataKey="temperature" title="Temperature Trend (°C)" color="hsl(var(--chart-1))" unit="°C" />
-            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO₂ Trend (ppm)" color={getCo2ConfigValues(latestReading?.co2 ?? 0).strokeColor} unit="ppm" />
-            <HistoricalDataChart data={historicalData} dataKey="pm2_5" title="PM2.5 Trend (μg/m³)" color="hsl(var(--chart-3))" unit="μg/m³" />
-            <HistoricalDataChart data={historicalData} dataKey="humidity" title="Humidity Trend (%)" color="hsl(var(--chart-4))" unit="%" />
-            <HistoricalDataChart data={historicalData} dataKey="pm10" title="PM10 Trend (μg/m³)" color="hsl(var(--accent))" unit="μg/m³" />
+            {Object.keys(DIAL_CONFIGS)
+              .filter(key => key !== activeDialKey && DIAL_CONFIGS[key as keyof typeof DIAL_CONFIGS]) 
+              .map(keyStr => {
+                const key = keyStr as keyof typeof DIAL_CONFIGS;
+                const config = DIAL_CONFIGS[key];
+                if (!config) return null; 
+
+                let colorForChart: string;
+                const colorMapEntry = chartColorMapping[key];
+                if (typeof colorMapEntry === 'function') {
+                  colorForChart = colorMapEntry(latestReading?.[key as keyof AirQualityReading] as number ?? 0);
+                } else {
+                  colorForChart = colorMapEntry;
+                }
+
+                return (
+                  <HistoricalDataChart
+                    key={key}
+                    data={historicalData}
+                    dataKey={key as keyof AirQualityReading}
+                    title={`${config.title} Trend`}
+                    color={colorForChart}
+                    unit={config.unit}
+                  />
+                );
+            })}
           </div>
         ) : (
           !airQualityLoading && <p className="text-center text-muted-foreground">No historical data available.</p>
@@ -260,5 +297,3 @@ export function HomePageClient() {
     </div>
   );
 }
-
-    
