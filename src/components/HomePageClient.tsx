@@ -147,14 +147,14 @@ export function HomePageClient() {
     : currentMainDialConfig?.baseStrokeColor || "hsl(var(--muted))";
 
   let currentIconClassNameForMainDial = currentMainDialConfig?.iconClassName;
-  if (activeDialKey === 'co2') {
+  if (activeDialKey === 'co2' && currentMainDialConfig) {
     currentIconClassNameForMainDial = getCo2ConfigValues(currentValueForMainDial).iconClassName;
   }
 
   const activeExpandedCardConfig = DIAL_CONFIGS[activeDialKey];
   const activeExpandedCardValue = latestReading && activeExpandedCardConfig ? latestReading[activeDialKey as keyof AirQualityReading] as number : 0;
   let activeExpandedCardIconClassName = activeExpandedCardConfig?.iconClassName;
-  if (activeDialKey === 'co2') {
+  if (activeDialKey === 'co2' && activeExpandedCardConfig) {
     activeExpandedCardIconClassName = getCo2ConfigValues(activeExpandedCardValue).iconClassName;
   }
 
@@ -167,36 +167,35 @@ export function HomePageClient() {
         </h1>
       </div>
 
-      {/* Main Circular Dial Display */}
-      {latestReading && currentMainDialConfig && (
-        <section className="mb-6 md:mb-8 flex justify-center">
-          <MainDialDisplay
-            title={currentMainDialConfig.title}
-            value={currentValueForMainDial}
-            maxValue={currentMainDialConfig.maxValue}
-            strokeColor={currentStrokeColorForMainDial}
-            unit={currentMainDialConfig.unit}
-            icon={currentMainDialConfig.icon}
-            iconClassName={currentIconClassNameForMainDial}
-          />
-        </section>
-      )}
-
-      {/* Expanded Rectangular Card & Historical Chart for the Active Metric */}
-      {latestReading && activeDialKey && activeExpandedCardConfig && (
-         <section className="mb-6 md:mb-8 flex flex-col items-center gap-4 md:gap-6">
-          <div className="w-full max-w-xs sm:max-w-sm md:w-64">
-            <AirQualityCard
-              title={activeExpandedCardConfig.title}
-              value={activeExpandedCardValue}
-              unit={activeExpandedCardConfig.unit}
-              icon={activeExpandedCardConfig.icon}
-              iconClassName={activeExpandedCardIconClassName}
-              description={activeExpandedCardConfig.description}
+      {/* Main Circular Dial, Expanded Card, and its Historical Chart */}
+      {latestReading && activeDialKey && activeExpandedCardConfig && currentMainDialConfig && (
+         <section className="mb-6 md:mb-8 flex flex-col md:flex-row md:justify-around items-center md:items-start gap-6 md:gap-8">
+          {/* Left Column: Dial + Expanded Card */}
+          <div className="flex flex-col items-center gap-6">
+            <MainDialDisplay
+              title={currentMainDialConfig.title}
+              value={currentValueForMainDial}
+              maxValue={currentMainDialConfig.maxValue}
+              strokeColor={currentStrokeColorForMainDial}
+              unit={currentMainDialConfig.unit}
+              icon={currentMainDialConfig.icon}
+              iconClassName={currentIconClassNameForMainDial}
             />
+            <div className="w-full max-w-xs sm:max-w-sm md:w-72">
+              <AirQualityCard
+                title={activeExpandedCardConfig.title}
+                value={activeExpandedCardValue}
+                unit={activeExpandedCardConfig.unit}
+                icon={activeExpandedCardConfig.icon}
+                iconClassName={activeExpandedCardIconClassName}
+                description={activeExpandedCardConfig.description}
+              />
+            </div>
           </div>
+
+          {/* Right Column: Historical Chart */}
           {historicalData.length > 0 && (
-            <div className="w-full max-w-md md:max-w-lg lg:max-w-xl">
+            <div className="w-full md:flex-1 md:max-w-xl lg:max-w-2xl mt-6 md:mt-0">
                 <HistoricalDataChart
                     data={historicalData}
                     dataKey={activeDialKey as keyof AirQualityReading}
@@ -208,6 +207,7 @@ export function HomePageClient() {
           )}
         </section>
       )}
+
 
       {/* Grid of Other Selectable Cards */}
       <section className="flex flex-wrap justify-center gap-4 md:gap-6">
@@ -297,3 +297,4 @@ export function HomePageClient() {
     </div>
   );
 }
+
