@@ -7,8 +7,7 @@ import { AirQualityCard } from '@/components/AirQualityCard';
 import { HistoricalDataChart } from '@/components/HistoricalDataChart';
 import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { Thermometer, Droplets, Wind, CloudFog, Cloudy, MountainSnow } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Thermometer, Droplets, MountainSnow, CloudFog, Cloudy } from 'lucide-react'; // Wind removed as it's not used for a card
 import dynamic from 'next/dynamic';
 import { useAirQualityReadings } from '@/hooks/useAirQualityReadings';
 
@@ -23,23 +22,18 @@ export function HomePageClient() {
   const latestReading = historicalData && historicalData.length > 0 ? historicalData[0] : null;
 
   const [location, setLocation] = useState<LocationData | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (latestReading?.latitude && latestReading?.longitude) {
       setLocation({
         latitude: latestReading.latitude,
         longitude: latestReading.longitude,
-        // You could add a geocoding service here to get address if desired
       });
     } else if (!airQualityLoading && latestReading) {
-      // If there's a reading but no location data in it.
       setLocation(null);
     } else if (!airQualityLoading && !latestReading) {
-      // If no readings at all after loading.
       setLocation(null);
     }
-    // Only re-run if latestReading or airQualityLoading changes.
   }, [latestReading, airQualityLoading]);
 
 
@@ -61,6 +55,23 @@ export function HomePageClient() {
     );
   }
 
+  // Gauge configurations
+  let co2IconClassName = "text-green-500";
+  let co2GaugeStrokeColor = "hsl(120, 70%, 45%)"; // Green
+
+  if (latestReading && latestReading.co2 > 2000) {
+    co2IconClassName = "text-red-500";
+    co2GaugeStrokeColor = "hsl(var(--destructive))"; // Red
+  } else if (latestReading && latestReading.co2 > 1000) {
+    co2IconClassName = "text-yellow-500";
+    co2GaugeStrokeColor = "hsl(45, 100%, 55%)"; // Yellow
+  }
+  
+  const tempGaugeColor = "hsl(30, 90%, 60%)"; // Orange
+  const humidityGaugeColor = "hsl(var(--primary))"; // Blue
+  const pm25GaugeColor = "hsl(var(--chart-4))"; // Purple
+  const pm10GaugeColor = "hsl(var(--chart-3))"; // Indigo
+
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="flex justify-between items-center">
@@ -74,43 +85,48 @@ export function HomePageClient() {
           <>
             <AirQualityCard
               title="Temperature"
-              value={latestReading.temperature.toFixed(1)}
+              value={latestReading.temperature}
               unit="°C"
               icon={Thermometer}
-              color="text-orange-500"
+              iconClassName="text-orange-500"
+              gaugeData={{ value: latestReading.temperature, maxValue: 50, strokeColor: tempGaugeColor }}
               description="Ambient temperature"
             />
             <AirQualityCard
               title="Humidity"
-              value={latestReading.humidity.toFixed(1)}
+              value={latestReading.humidity}
               unit="%"
               icon={Droplets}
-              color="text-blue-500"
+              iconClassName="text-blue-500"
+              gaugeData={{ value: latestReading.humidity, maxValue: 100, strokeColor: humidityGaugeColor }}
               description="Relative humidity"
             />
             <AirQualityCard
               title="CO₂"
-              value={latestReading.co2.toFixed(0)}
+              value={latestReading.co2}
               unit="ppm"
-              icon={MountainSnow} 
-              color={latestReading.co2 > 2000 ? "text-red-500" : latestReading.co2 > 1000 ? "text-yellow-500" : "text-green-500"}
+              icon={MountainSnow}
+              iconClassName={co2IconClassName}
+              gaugeData={{ value: latestReading.co2, maxValue: 3000, strokeColor: co2GaugeStrokeColor }}
               description="Carbon Dioxide Level (MQ135)"
             />
              <AirQualityCard
               title="PM2.5"
-              value={latestReading.pm2_5.toFixed(1)}
+              value={latestReading.pm2_5}
               unit="μg/m³"
               icon={CloudFog}
-              color="text-indigo-500"
-              description="Particulate Matter <2.5μm"
+              iconClassName="text-indigo-500"
+              gaugeData={{ value: latestReading.pm2_5, maxValue: 100, strokeColor: pm25GaugeColor }}
+              description="Fine Particulate Matter (<2.5μm)"
             />
             <AirQualityCard
               title="PM10"
-              value={latestReading.pm10.toFixed(1)}
+              value={latestReading.pm10} // Keep this for text display
               unit="μg/m³"
               icon={Cloudy}
-              color="text-slate-500"
-              description="Particulate Matter <10μm"
+              iconClassName="text-slate-500"
+              gaugeData={{ value: latestReading.pm10, maxValue: 200, strokeColor: pm10GaugeColor }}
+              description="Coarse Particulate Matter (<10μm)"
             />
             <LocationMap location={location} isLoading={airQualityLoading} className="col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-4" />
           </>
@@ -124,7 +140,7 @@ export function HomePageClient() {
         {historicalData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <HistoricalDataChart data={historicalData} dataKey="temperature" title="Temperature Trend (°C)" color="hsl(var(--chart-1))" unit="°C" />
-            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO₂ Trend (ppm)" color="hsl(var(--chart-2))" unit="ppm" />
+            <HistoricalDataChart data={historicalData} dataKey="co2" title="CO₂ Trend (ppm)" color={co2GaugeStrokeColor} unit="ppm" />
             <HistoricalDataChart data={historicalData} dataKey="pm2_5" title="PM2.5 Trend (μg/m³)" color="hsl(var(--chart-3))" unit="μg/m³" />
             <HistoricalDataChart data={historicalData} dataKey="humidity" title="Humidity Trend (%)" color="hsl(var(--chart-4))" unit="%" />
             <HistoricalDataChart data={historicalData} dataKey="pm10" title="PM10 Trend (μg/m³)" color="hsl(var(--accent))" unit="μg/m³" />
