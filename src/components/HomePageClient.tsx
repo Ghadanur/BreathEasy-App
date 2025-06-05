@@ -30,14 +30,14 @@ interface DialConfig {
 }
 
 const tempGaugeColor = "hsl(30, 90%, 60%)"; // Orange
-const humidityGaugeColor = "hsl(210, 70%, 50%)"; // Primary Blue
-const pm25GaugeColor = "hsl(270, 60%, 65%)"; // Purple
-const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo
+const humidityGaugeColor = "hsl(210, 70%, 50%)"; // Primary Blue: hsl(210, 70%, 50%)
+const pm25GaugeColor = "hsl(270, 60%, 65%)"; // Purple: hsl(270, 60%, 65%)
+const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo: hsl(240, 60%, 60%)
 
 
 const getCo2ConfigValues = (co2Value: number): { iconClassName: string; strokeColor: string } => {
   if (co2Value > 2000) {
-    return { iconClassName: "text-red-500", strokeColor: "hsl(0, 84.2%, 60.2%)" }; // Destructive
+    return { iconClassName: "text-red-500", strokeColor: "hsl(0, 84.2%, 60.2%)" }; // Destructive Red: hsl(0, 84.2%, 60.2%)
   } else if (co2Value > 1000) {
     return { iconClassName: "text-yellow-500", strokeColor: "hsl(45, 100%, 55%)" }; // Yellow
   }
@@ -181,7 +181,7 @@ export function HomePageClient() {
 
           {/* Right Column: Historical Chart for Active Metric */}
           {(historicalData.length > 0) && (
-            <div className="w-full md:flex-1 md:max-w-2xl lg:max-w-3xl mt-6 md:mt-0 flex flex-col gap-6 md:gap-8">
+            <div className="w-full md:flex-1 md:max-w-2xl lg:max-w-4xl mt-6 md:mt-0 flex flex-col gap-6 md:gap-8">
               <HistoricalDataChart
                   data={historicalData}
                   dataKey={activeDialKey as keyof AirQualityReading}
