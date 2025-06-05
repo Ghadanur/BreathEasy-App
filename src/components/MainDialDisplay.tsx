@@ -18,103 +18,86 @@ interface MainDialDisplayProps {
 }
 
 interface Dimensions {
-  // Tailwind classes for the card's container (w-X h-X)
   cardSizeClass: string; 
-  
-  // Base size for the gauge, drives other internal element sizes
   baseGaugeSize: number; 
-  
-  // Calculated numeric values for internal elements
   iconSizePx: number;
   titleFontSizePx: number;
   gaugeStrokeWidthPx: number;
   valueFontSizePx: number;
   unitFontSizePx: number;
-
-  // Tailwind classes for internal layout/spacing
-  // Overall padding for the card content area
   cardOverallPadding: string; 
-  // Gap between header and content blocks within the card
   cardInternalGap: string; 
-  // Margin for the gauge element
   gaugeMarginClasses: string;
-  // Margin top for the value/unit container
   valueContainerMarginTop: string;
 }
 
 // Define base dimensions and ratios for the largest size (e.g., XL)
-const xlDimsConfigBase = {
-  cardSizeClass: 'w-96 h-96', // Tailwind class for outer card size
-  cardOverallPadding: 'p-4', // Overall padding
-  cardInternalGap: 'gap-3', // Gap between header and content blocks
-  baseGaugeSize: 180, // Main driver for internal scaling
-  iconSizeRatio: 1/4.5,
-  titleFontSizeRatio: 1/7.5,
-  strokeWidthRatio: 1/10,
-  valueFontSizeRatio: 1/3.75,
-  unitFontSizeRatio: 1/9,
-  gaugeMarginClasses: 'my-2', // Margin for the gauge
-  valueContainerMarginTop: 'mt-2', // Margin top for the value/unit container
+// These ratios determine how internal elements scale relative to baseGaugeSize
+const baseRatios = {
+  iconSizeRatio: 1 / 4.5,
+  titleFontSizeRatio: 1 / 7.5,
+  strokeWidthRatio: 1 / 10,
+  valueFontSizeRatio: 1 / 3.75,
+  unitFontSizeRatio: 1 / 9,
 };
 
 const calculateDimensions = (screenWidth: number): Dimensions => {
-  let
-   
-baseConfig = xlDimsConfigBase;
+  let config;
 
   if (screenWidth < 640) { // xs
-    baseConfig = {
-      ...xlDimsConfigBase,
-      cardSizeClass: 'w-56 h-56',
-      baseGaugeSize: 100,
+    config = {
+      cardSizeClass: 'w-64 h-64', // 256px
+      baseGaugeSize: 120,
+      cardOverallPadding: 'p-3',
       cardInternalGap: 'gap-1',
       gaugeMarginClasses: 'my-1',
       valueContainerMarginTop: 'mt-1',
-      // cardOverallPadding remains p-4 or could be adjusted, e.g. p-3
     };
   } else if (screenWidth < 768) { // sm
-    baseConfig = {
-      ...xlDimsConfigBase,
-      cardSizeClass: 'w-64 h-64',
-      baseGaugeSize: 120,
-      cardInternalGap: 'gap-1', // Kept smaller gap for sm
+    config = {
+      cardSizeClass: 'w-72 h-72', // 288px
+      baseGaugeSize: 140,
+      cardOverallPadding: 'p-4',
+      cardInternalGap: 'gap-2',
       gaugeMarginClasses: 'my-1',
       valueContainerMarginTop: 'mt-1',
-      // cardOverallPadding remains p-4
     };
   } else if (screenWidth < 1024) { // md
-    baseConfig = {
-      ...xlDimsConfigBase,
-      cardSizeClass: 'w-72 h-72',
-      baseGaugeSize: 140,
+    config = {
+      cardSizeClass: 'w-80 h-80', // 320px
+      baseGaugeSize: 160,
+      cardOverallPadding: 'p-4',
       cardInternalGap: 'gap-2',
-      gaugeMarginClasses: 'my-2', // Corrected: Explicitly set
-      valueContainerMarginTop: 'mt-2', // Corrected: Explicitly set
+      gaugeMarginClasses: 'my-2',
+      valueContainerMarginTop: 'mt-2',
     };
   } else if (screenWidth < 1280) { // lg
-    baseConfig = {
-      ...xlDimsConfigBase,
-      cardSizeClass: 'w-80 h-80',
-      baseGaugeSize: 160,
-      cardInternalGap: 'gap-2', // Kept gap-2 for lg
-      gaugeMarginClasses: 'my-2', // Corrected: Explicitly set
-      valueContainerMarginTop: 'mt-2', // Corrected: Explicitly set
+    config = {
+      cardSizeClass: 'w-96 h-96', // 384px
+      baseGaugeSize: 200,
+      cardOverallPadding: 'p-5',
+      cardInternalGap: 'gap-3',
+      gaugeMarginClasses: 'my-2',
+      valueContainerMarginTop: 'mt-2',
+    };
+  } else { // xl and up
+    config = {
+      cardSizeClass: 'w-[26rem] h-[26rem]', // 416px
+      baseGaugeSize: 220,
+      cardOverallPadding: 'p-6',
+      cardInternalGap: 'gap-4',
+      gaugeMarginClasses: 'my-3',
+      valueContainerMarginTop: 'mt-3',
     };
   }
-  // For xl and up, the initial `baseConfig` (xlDimsConfigBase) is used.
 
   return {
-    cardSizeClass: baseConfig.cardSizeClass,
-    cardOverallPadding: baseConfig.cardOverallPadding,
-    cardInternalGap: baseConfig.cardInternalGap,
-    baseGaugeSize: baseConfig.baseGaugeSize,
-    iconSizePx: Math.round(baseConfig.baseGaugeSize * baseConfig.iconSizeRatio),
-    titleFontSizePx: Math.round(baseConfig.baseGaugeSize * baseConfig.titleFontSizeRatio),
-    gaugeStrokeWidthPx: Math.round(baseConfig.baseGaugeSize * baseConfig.strokeWidthRatio),
-    valueFontSizePx: Math.round(baseConfig.baseGaugeSize * baseConfig.valueFontSizeRatio),
-    unitFontSizePx: Math.round(baseConfig.baseGaugeSize * baseConfig.unitFontSizeRatio),
-    gaugeMarginClasses: baseConfig.gaugeMarginClasses,
-    valueContainerMarginTop: baseConfig.valueContainerMarginTop,
+    ...config,
+    iconSizePx: Math.round(config.baseGaugeSize * baseRatios.iconSizeRatio),
+    titleFontSizePx: Math.round(config.baseGaugeSize * baseRatios.titleFontSizeRatio),
+    gaugeStrokeWidthPx: Math.round(config.baseGaugeSize * baseRatios.strokeWidthRatio),
+    valueFontSizePx: Math.round(config.baseGaugeSize * baseRatios.valueFontSizeRatio),
+    unitFontSizePx: Math.round(config.baseGaugeSize * baseRatios.unitFontSizeRatio),
   };
 };
 
@@ -128,8 +111,7 @@ export function MainDialDisplay({
   maxValue,
   strokeColor,
 }: MainDialDisplayProps) {
-  // Initialize with default dimensions for server render / no window
-  const [dims, setDims] = useState<Dimensions>(calculateDimensions(1280)); // Default to XL size
+  const [dims, setDims] = useState<Dimensions>(calculateDimensions(1280)); // Default to XL size for SSR
 
   useEffect(() => {
     const handleResize = () => {
@@ -137,7 +119,7 @@ export function MainDialDisplay({
     };
 
     if (typeof window !== 'undefined') {
-      handleResize(); // Set initial dimensions based on client's screen width
+      handleResize(); 
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }
@@ -153,7 +135,7 @@ export function MainDialDisplay({
       dims.cardInternalGap      
     )}>
       <CardHeader className={cn(
-        "flex flex-col items-center space-y-1 p-0 transition-all duration-300 ease-in-out" // p-0 to ensure parent padding controls layout
+        "flex flex-col items-center space-y-1 p-0 transition-all duration-300 ease-in-out"
       )}>
         {Icon && (
           <Icon 
@@ -169,7 +151,7 @@ export function MainDialDisplay({
         </CardTitle>
       </CardHeader>
       <CardContent className={cn(
-        "flex flex-col items-center p-0 transition-all duration-300 ease-in-out" // p-0 to ensure parent padding controls layout
+        "flex flex-col items-center p-0 transition-all duration-300 ease-in-out"
       )}>
         <CircularGauge
           value={value}
@@ -186,7 +168,7 @@ export function MainDialDisplay({
           {displayValue}
           {unit && (
             <span 
-              className={cn("text-muted-foreground ml-1 transition-all duration-300 ease-in-out")} // Changed ml-1.5 to ml-1
+              className={cn("text-muted-foreground ml-1 transition-all duration-300 ease-in-out")}
               style={{ fontSize: `${dims.unitFontSizePx}px` }}
             >
               {unit}
