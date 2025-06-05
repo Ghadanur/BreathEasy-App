@@ -14,19 +14,19 @@ interface CircularGaugeProps {
 }
 
 // Helper function to parse HSL and lighten it
-function lightenHsl(hslColor: string, amount: number = 20): string {
-  const match = hslColor.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+function lightenHsl(hslColor: string, amount: number = 15): string {
+  // Regex to match hsl(H, S%, L%) allowing for integer or float values for H, S, L
+  const match = hslColor.match(/hsl\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)/);
   if (!match) {
-    // If it's not a simple HSL string (e.g., a CSS variable or named color),
-    // we can't easily lighten it programmatically here.
-    // For simplicity, return the original color or a fallback.
-    // A more robust solution might involve a color library or expecting specific formats.
+    // Fallback if the color string is not in the expected HSL format
+    // This might happen if a CSS variable name or another color format is passed unexpectedly.
+    console.warn("lightenHsl: Could not parse HSL color string:", hslColor);
     return hslColor; 
   }
 
-  let h = parseInt(match[1]);
-  let s = parseInt(match[2]);
-  let l = parseInt(match[3]);
+  let h = parseFloat(match[1]);
+  let s = parseFloat(match[2]);
+  let l = parseFloat(match[3]);
 
   l = Math.min(100, l + amount); // Increase lightness, cap at 100%
   return `hsl(${h}, ${s}%, ${l}%)`;
@@ -49,7 +49,7 @@ export function CircularGauge({
   const viewBox = `0 0 ${size} ${size}`;
 
   const gradientId = React.useId();
-  const lighterStrokeColor = lightenHsl(strokeColor, 15); // Lighten by 15%
+  const lighterStrokeColor = lightenHsl(strokeColor, 15); 
 
   return (
     <svg
@@ -70,7 +70,7 @@ export function CircularGauge({
         cy={center}
         r={radius}
         fill="none"
-        stroke="hsl(var(--muted))"
+        stroke="hsl(var(--muted))" 
         strokeWidth={strokeWidth}
       />
       {/* Foreground progress */}

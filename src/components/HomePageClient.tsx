@@ -30,17 +30,18 @@ interface DialConfig {
 }
 
 const tempGaugeColor = "hsl(30, 90%, 60%)"; // Orange
-const humidityGaugeColor = "hsl(var(--primary))"; // Blue
-const pm25GaugeColor = "hsl(var(--chart-4))"; // Purple
-const pm10GaugeColor = "hsl(var(--chart-3))"; // Indigo
+const humidityGaugeColor = "hsl(210, 70%, 50%)"; // Primary Blue (resolved from --primary)
+const pm25GaugeColor = "hsl(270, 60%, 65%)"; // Purple (resolved from --chart-4)
+const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo (resolved from --chart-3)
+
 
 const getCo2ConfigValues = (co2Value: number): { iconClassName: string; strokeColor: string } => {
   if (co2Value > 2000) {
-    return { iconClassName: "text-red-500", strokeColor: "hsl(var(--destructive))" };
+    return { iconClassName: "text-red-500", strokeColor: "hsl(0, 84.2%, 60.2%)" }; // Destructive
   } else if (co2Value > 1000) {
-    return { iconClassName: "text-yellow-500", strokeColor: "hsl(45, 100%, 55%)" };
+    return { iconClassName: "text-yellow-500", strokeColor: "hsl(45, 100%, 55%)" }; // Yellow
   }
-  return { iconClassName: "text-green-500", strokeColor: "hsl(120, 70%, 45%)" };
+  return { iconClassName: "text-green-500", strokeColor: "hsl(120, 70%, 45%)" }; // Green
 };
 
 const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
@@ -92,11 +93,11 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
 };
 
 const chartColorMapping: Record<keyof typeof DIAL_CONFIGS, string | ((value: number) => string)> = {
-  temperature: "hsl(var(--chart-1))",
-  humidity: "hsl(var(--chart-4))",
-  co2: (value: number) => getCo2ConfigValues(value).strokeColor,
-  pm2_5: "hsl(var(--chart-3))",
-  pm10: "hsl(var(--accent))",
+  temperature: "hsl(210, 70%, 50%)", // Chart-1 / Primary Blue
+  humidity: "hsl(270, 60%, 65%)",    // Chart-4 / Purple
+  co2: (value: number) => getCo2ConfigValues(value).strokeColor, // Dynamic based on value
+  pm2_5: "hsl(240, 60%, 60%)",      // Chart-3 / Indigo
+  pm10: "hsl(180, 60%, 40%)",       // Accent / Deep Turquoise
 };
 
 
@@ -245,6 +246,7 @@ export function HomePageClient() {
                 let colorForChart: string;
                 const colorMapEntry = chartColorMapping[key];
                 if (typeof colorMapEntry === 'function') {
+                  // For CO2, the color depends on the latest reading's value
                   colorForChart = colorMapEntry(latestReading?.[key as keyof AirQualityReading] as number ?? 0);
                 } else {
                   colorForChart = colorMapEntry;
@@ -281,4 +283,3 @@ export function HomePageClient() {
     </div>
   );
 }
-
