@@ -28,15 +28,15 @@ export function SemiCircleGauge({
   const viewBox = `0 0 ${size} ${size / 2 + strokeWidth / 2}`;
 
   return (
-    <svg 
-      width={size} 
-      height={size / 2 + strokeWidth / 2} 
-      viewBox={viewBox} 
-      className={cn("transform -rotate-90 scale-y-[-1]", className)}
+    <svg
+      width={size}
+      height={size / 2 + strokeWidth / 2}
+      viewBox={viewBox}
+      className={cn(className)} // Removed "transform -rotate-90 scale-y-[-1]"
     >
       {/* Background track */}
       <path
-        d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+        d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 0 ${size - strokeWidth / 2} ${size / 2}`} // Changed sweep flag from 1 to 0
         fill="none"
         stroke="hsl(var(--muted))" // Muted color for the track
         strokeWidth={strokeWidth}
@@ -44,7 +44,7 @@ export function SemiCircleGauge({
       />
       {/* Foreground progress */}
       <path
-        d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+        d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 0 ${size - strokeWidth / 2} ${size / 2}`} // Changed sweep flag from 1 to 0
         fill="none"
         stroke={strokeColor}
         strokeWidth={strokeWidth}
