@@ -30,9 +30,9 @@ interface DialConfig {
 }
 
 const tempGaugeColor = "hsl(30, 90%, 60%)"; // Orange
-const humidityGaugeColor = "hsl(210, 70%, 50%)"; // Primary Blue 
-const pm25GaugeColor = "hsl(270, 60%, 65%)"; // Purple 
-const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo 
+const humidityGaugeColor = "hsl(210, 70%, 50%)"; // Primary Blue
+const pm25GaugeColor = "hsl(270, 60%, 65%)"; // Purple
+const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo
 
 
 const getCo2ConfigValues = (co2Value: number): { iconClassName: string; strokeColor: string } => {
@@ -95,7 +95,7 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
 const chartColorMapping: Record<keyof typeof DIAL_CONFIGS, string | ((value: number) => string)> = {
   temperature: "hsl(210, 70%, 50%)", // Primary Blue
   humidity: "hsl(270, 60%, 65%)",    // Purple
-  co2: (value: number) => getCo2ConfigValues(value).strokeColor, 
+  co2: (value: number) => getCo2ConfigValues(value).strokeColor,
   pm2_5: "hsl(240, 60%, 60%)",      // Indigo
   pm10: "hsl(180, 60%, 40%)",       // Deep Turquoise
 };
@@ -115,9 +115,9 @@ export function HomePageClient() {
         longitude: latestReading.longitude,
       });
     } else if (!airQualityLoading && latestReading) {
-      setLocation(null); 
+      setLocation(null);
     } else if (!airQualityLoading && !latestReading) {
-        setLocation(null); 
+        setLocation(null);
     }
   }, [latestReading, airQualityLoading]);
 
@@ -139,10 +139,10 @@ export function HomePageClient() {
       </div>
     );
   }
-  
+
   const currentMainDialConfig = DIAL_CONFIGS[activeDialKey];
   const currentValueForMainDial = latestReading && currentMainDialConfig ? latestReading[activeDialKey as keyof AirQualityReading] as number : 0;
-  
+
   let currentStrokeColorForMainDial = typeof currentMainDialConfig?.baseStrokeColor === 'function'
     ? currentMainDialConfig.baseStrokeColor(currentValueForMainDial)
     : currentMainDialConfig?.baseStrokeColor || "hsl(var(--muted))";
@@ -163,11 +163,11 @@ export function HomePageClient() {
         </h1>
       </div>
 
-      {/* Expanded View: Dial (Left) + Tips and Active Chart (Right) */}
+      {/* Expanded View: Dial (Left) + Chart & Tips (Right) */}
       {latestReading && activeDialKey && currentMainDialConfig && activeChartConfig && (
          <section className="mb-6 md:mb-8 flex flex-col md:flex-row md:justify-around items-center md:items-start gap-6 md:gap-8">
-          {/* Left Column: Dial + Personalized Tips */}
-          <div className="flex flex-col items-center gap-6 md:gap-8 w-full md:w-auto">
+          {/* Left Column: Dial */}
+          <div className="flex flex-col items-center w-full md:w-auto">
             <MainDialDisplay
               title={currentMainDialConfig.title}
               value={currentValueForMainDial}
@@ -177,24 +177,24 @@ export function HomePageClient() {
               icon={currentMainDialConfig.icon}
               iconClassName={currentIconClassNameForMainDial}
             />
-            <div className="w-full max-w-md md:w-96">
-              <PersonalizedTips
-                latestReading={latestReading}
-                derivedLocation={location}
-              />
-            </div>
           </div>
 
-          {/* Right Column: Historical Chart for Active Metric */}
+          {/* Right Column: Historical Chart for Active Metric + Personalized Tips */}
           {historicalData.length > 0 && (
-            <div className="w-full md:flex-1 md:max-w-xl lg:max-w-2xl mt-6 md:mt-0">
+            <div className="w-full md:flex-1 md:max-w-xl lg:max-w-2xl mt-6 md:mt-0 flex flex-col gap-6 md:gap-8">
                 <HistoricalDataChart
                     data={historicalData}
                     dataKey={activeDialKey as keyof AirQualityReading}
                     title={`${activeChartConfig.title} Trend`}
-                    color={currentStrokeColorForMainDial} 
+                    color={currentStrokeColorForMainDial}
                     unit={activeChartConfig.unit}
                 />
+                <div className="w-full max-w-md self-center">
+                  <PersonalizedTips
+                    latestReading={latestReading}
+                    derivedLocation={location}
+                  />
+                </div>
             </div>
           )}
         </section>
@@ -208,14 +208,14 @@ export function HomePageClient() {
             {Object.entries(DIAL_CONFIGS).map(([key, config]) => {
                 const cardValue = latestReading[key as keyof AirQualityReading] as number;
                 let iconClass = config.iconClassName;
-                
+
                 if (key === 'co2') {
                   const co2Vals = getCo2ConfigValues(cardValue);
                   iconClass = co2Vals.iconClassName;
                 }
 
                 return (
-                  <div key={key} className="w-full max-w-xs sm:max-w-sm md:w-60"> 
+                  <div key={key} className="w-full max-w-xs sm:max-w-sm md:w-60">
                     <AirQualityCard
                       title={config.title}
                       value={cardValue}
@@ -233,7 +233,7 @@ export function HomePageClient() {
           !airQualityLoading && <p className="col-span-full text-center text-muted-foreground">No current air quality data available.</p>
         )}
       </section>
-      
+
       <LocationMap location={location} isLoading={airQualityLoading} className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5" />
 
 
@@ -242,11 +242,11 @@ export function HomePageClient() {
         {historicalData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {Object.keys(DIAL_CONFIGS)
-              .filter(key => key !== activeDialKey && DIAL_CONFIGS[key as keyof typeof DIAL_CONFIGS]) 
+              .filter(key => key !== activeDialKey && DIAL_CONFIGS[key as keyof typeof DIAL_CONFIGS])
               .map(keyStr => {
                 const key = keyStr as keyof typeof DIAL_CONFIGS;
                 const config = DIAL_CONFIGS[key];
-                if (!config) return null; 
+                if (!config) return null;
 
                 let colorForChart: string;
                 const colorMapEntry = chartColorMapping[key];
@@ -273,8 +273,6 @@ export function HomePageClient() {
         )}
       </section>
 
-      {/* PersonalizedTips was here, now moved to expanded view */}
-
       <footer className="text-center py-8 text-sm text-muted-foreground">
         <p>&copy; {new Date().getFullYear()} BreatheEasy Mobile. All rights reserved.</p>
         <p>Air quality data provided by ESP32 sensor network via Firebase.</p>
@@ -282,4 +280,3 @@ export function HomePageClient() {
     </div>
   );
 }
-
