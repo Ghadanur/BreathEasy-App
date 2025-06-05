@@ -30,9 +30,9 @@ interface DialConfig {
 }
 
 const tempGaugeColor = "hsl(30, 90%, 60%)"; // Orange
-const humidityGaugeColor = "hsl(210, 70%, 50%)"; // Primary Blue - Direct HSL
-const pm25GaugeColor = "hsl(270, 60%, 65%)"; // Purple (from --chart-4) - Direct HSL
-const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo (from --chart-3) - Direct HSL
+const humidityGaugeColor = "hsl(210, 70%, 50%)"; // Primary Blue
+const pm25GaugeColor = "hsl(270, 60%, 65%)"; // Purple
+const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo
 
 
 const getCo2ConfigValues = (co2Value: number): { iconClassName: string; strokeColor: string } => {
@@ -93,11 +93,11 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
 };
 
 const chartColorMapping: Record<keyof typeof DIAL_CONFIGS, string | ((value: number) => string)> = {
-  temperature: tempGaugeColor, // Orange
-  humidity: humidityGaugeColor, // Primary Blue
-  co2: (value: number) => getCo2ConfigValues(value).strokeColor, // Dynamic Green/Yellow/Red
-  pm2_5: pm25GaugeColor, // Purple
-  pm10: pm10GaugeColor, // Indigo
+  temperature: tempGaugeColor,
+  humidity: humidityGaugeColor,
+  co2: (value: number) => getCo2ConfigValues(value).strokeColor,
+  pm2_5: pm25GaugeColor,
+  pm10: pm10GaugeColor,
 };
 
 
@@ -163,7 +163,7 @@ export function HomePageClient() {
         </h1>
       </div>
 
-      {/* Expanded View: Dial (Left) + Chart & Tips (Right) */}
+      {/* Expanded View: Dial (Left) + Chart (Right) */}
       {latestReading && activeDialKey && currentMainDialConfig && activeChartConfig && (
          <section className="mb-6 md:mb-8 flex flex-col md:flex-row md:justify-around items-center md:items-start gap-6 md:gap-8">
           {/* Left Column: Dial */}
@@ -180,15 +180,15 @@ export function HomePageClient() {
           </div>
 
           {/* Right Column: Historical Chart for Active Metric */}
-          {historicalData.length > 0 && (
-            <div className="w-full md:flex-1 md:max-w-xl lg:max-w-2xl mt-6 md:mt-0">
-                <HistoricalDataChart
-                    data={historicalData}
-                    dataKey={activeDialKey as keyof AirQualityReading}
-                    title={`${activeChartConfig.title} Trend`}
-                    color={currentStrokeColorForMainDial}
-                    unit={activeChartConfig.unit}
-                />
+          {(historicalData.length > 0) && (
+            <div className="w-full md:flex-1 md:max-w-2xl lg:max-w-3xl mt-6 md:mt-0 flex flex-col gap-6 md:gap-8">
+              <HistoricalDataChart
+                  data={historicalData}
+                  dataKey={activeDialKey as keyof AirQualityReading}
+                  title={`${activeChartConfig.title} Trend`}
+                  color={currentStrokeColorForMainDial}
+                  unit={activeChartConfig.unit}
+              />
             </div>
           )}
         </section>
