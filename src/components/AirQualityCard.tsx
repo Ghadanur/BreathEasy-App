@@ -78,27 +78,27 @@ export function AirQualityCard({
       <DialogTrigger asChild>
         <Card className={cn(
           "shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer",
-          isCircular 
-            ? "rounded-full w-40 h-40 flex flex-col items-center justify-center p-3" 
+          isCircular
+            ? "rounded-full w-48 h-48 flex flex-col items-center justify-center p-4" // Increased size and padding
             : "flex flex-col justify-between",
           className
         )}>
-          {isCircular && gaugeData ? ( 
+          {isCircular && gaugeData ? (
             <>
-              <div className="flex flex-col items-center pt-1"> 
-                <Icon className={cn("h-6 w-6", iconClassName ? iconClassName : "text-muted-foreground")} /> 
-                <CardTitle className="text-sm font-medium text-center mt-1"> 
+              <div className="flex flex-col items-center pt-2"> {/* Adjusted padding */}
+                <Icon className={cn("h-7 w-7", iconClassName ? iconClassName : "text-muted-foreground")} /> {/* Increased icon size */}
+                <CardTitle className="text-base font-medium text-center mt-2"> {/* Increased title size and margin */}
                   {title}
                 </CardTitle>
               </div>
-              
-              <div className="relative transform scale-y-[-1] -rotate-90 my-1.5"> 
-                <SemiCircleGauge {...gaugeData} size={80} strokeWidth={8} />
+
+              <div className="relative transform scale-y-[-1] -rotate-90 my-2"> {/* Adjusted margin */}
+                <SemiCircleGauge {...gaugeData} size={100} strokeWidth={10} /> {/* Increased gauge size */}
               </div>
-              
-              <div className="text-2xl font-bold text-card-foreground pb-1"> 
+
+              <div className="text-3xl font-bold text-card-foreground pb-2"> {/* Increased value size, adjusted padding */}
                 {displayValue}
-                {unit && <span className="text-sm text-muted-foreground ml-1">{unit}</span>} 
+                {unit && <span className="text-base text-muted-foreground ml-1">{unit}</span>} {/* Increased unit size */}
               </div>
             </>
           ) : (
@@ -138,4 +138,3 @@ export function AirQualityCard({
     </Dialog>
   );
 }
-
