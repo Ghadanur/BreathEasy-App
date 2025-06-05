@@ -79,26 +79,26 @@ export function AirQualityCard({
         <Card className={cn(
           "shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer",
           isCircular
-            ? "rounded-full w-48 h-48 flex flex-col items-center justify-center p-4" // Increased size and padding
+            ? "rounded-full w-48 h-48 flex flex-col items-center justify-center p-4" 
             : "flex flex-col justify-between",
           className
         )}>
           {isCircular && gaugeData ? (
             <>
-              <div className="flex flex-col items-center pt-2"> {/* Adjusted padding */}
-                <Icon className={cn("h-7 w-7", iconClassName ? iconClassName : "text-muted-foreground")} /> {/* Increased icon size */}
-                <CardTitle className="text-base font-medium text-center mt-2"> {/* Increased title size and margin */}
+              <div className="flex flex-col items-center"> {/* Removed pt-2 */}
+                <Icon className={cn("h-6 w-6", iconClassName ? iconClassName : "text-muted-foreground")} /> {/* Changed size */}
+                <CardTitle className="text-sm font-medium text-center mt-1"> {/* Changed size & margin */}
                   {title}
                 </CardTitle>
               </div>
 
-              <div className="relative transform scale-y-[-1] -rotate-90 my-2"> {/* Adjusted margin */}
-                <SemiCircleGauge {...gaugeData} size={100} strokeWidth={10} /> {/* Increased gauge size */}
+              <div className="relative transform scale-y-[-1] -rotate-90 my-1"> {/* Changed margin */}
+                <SemiCircleGauge {...gaugeData} size={60} strokeWidth={6} /> {/* Changed size */}
               </div>
 
-              <div className="text-3xl font-bold text-card-foreground pb-2"> {/* Increased value size, adjusted padding */}
+              <div className="text-xl font-bold text-card-foreground"> {/* Changed size, removed pb-2 */}
                 {displayValue}
-                {unit && <span className="text-base text-muted-foreground ml-1">{unit}</span>} {/* Increased unit size */}
+                {unit && <span className="text-xs text-muted-foreground ml-1">{unit}</span>} {/* Changed size */}
               </div>
             </>
           ) : (
@@ -121,7 +121,7 @@ export function AirQualityCard({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
-            <Icon className={cn("h-10 w-10", iconClassName ? iconClassName : "text-primary")} />
+            <Icon className={cn("h-10 w-10", iconClassName ? iconClassName : "text-muted-foreground")} />
             <ShadDialogTitle className="text-2xl text-card-foreground">{title}</ShadDialogTitle>
           </div>
         </DialogHeader>
@@ -138,3 +138,4 @@ export function AirQualityCard({
     </Dialog>
   );
 }
+
