@@ -1,6 +1,6 @@
 
 export interface AirQualityReading {
-  id: string; // Firebase node key (e.g., readingsYYYY-MM-DD_HH-MM-SS)
+  id: string; // Firestore document ID
   timestamp: string; // ISO string format (e.g., "2023-10-27T14:30:15.000Z")
   temperature: number; // Celsius
   humidity: number; // Percentage
@@ -22,36 +22,36 @@ export interface PersonalizedTip {
   text: string;
 }
 
-// Structure for individual sensor metric from Firebase RTDB (as per ESP32 code)
-export interface RTDBMetric {
-  value: number;
-  unit?: string;
-  name?: string;
-  description?: string;
-  color?: string;
-  bgColor?: string;
-}
+// Type for the string timestamp as stored in Firestore by the ESP32
+export type FirestoreTimestampString = string; // Format: "YYYY-MM-DD HH:MM:SS"
 
-// Structure for location data from Firebase RTDB (as per ESP32 code)
-export interface RTDBLocation {
-  lat: number;
-  lng: number;
-}
-
-// This is the expected structure from Firebase RTDB for a single reading entry
-// based on the provided ESP32 C++ code.
-export interface RTDBRawReading {
-  temp: RTDBMetric;
-  humidity: RTDBMetric;
-  co2: RTDBMetric;
-  pm25: RTDBMetric;
-  pm10: RTDBMetric;
-  location: RTDBLocation;
-  timestamp: string; // Expected format "YYYY-MM-DD HH-MM-SS" (time uses hyphens)
+// Raw structure of a document from Firestore 'readings' collection,
+// based on ESP32's uploadToFirestore function.
+export interface RawFirestoreReading {
+  fields: {
+    temp?: { doubleValue: number };
+    humidity?: { doubleValue: number };
+    co2?: { doubleValue: number };
+    pm25?: { doubleValue: number };
+    pm10?: { doubleValue: number };
+    location?: {
+      mapValue?: {
+        fields?: {
+          latitude?: { doubleValue: number };
+          longitude?: { doubleValue: number };
+        };
+      };
+    };
+    timestamp?: { stringValue: FirestoreTimestampString };
+  };
+  name?: string; // Document path, e.g., projects/projectID/databases/(default)/documents/readings/documentID
+  createTime?: string;
+  updateTime?: string;
 }
 
 
 // Structure for individual sensor metric from Firebase (Legacy or general)
+// This might be deprecated if RTDBRawReading is the sole source for current values.
 export interface FirebaseSensorMetric {
   value: number;
   unit?: string;
