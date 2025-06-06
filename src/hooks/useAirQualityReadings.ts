@@ -2,99 +2,123 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import type { AirQualityReading } from '@/types';
-import { firestore } from '@/lib/firebase'; // Changed to import firestore
+import type { AirQualityReading, RTDBRawReading } from '@/types';
+import { database } from '@/lib/firebase'; // Import RTDB instance
 import { 
-  collection, 
-  query as firestoreQuery, // Renamed to avoid conflict with global query
-  orderBy, 
-  limit, 
-  onSnapshot,
-  Timestamp as FirestoreTimestamp // Import Firestore Timestamp
-} from 'firebase/firestore';
+  ref, 
+  onValue, 
+  query as rtdbQuery, // Renamed to avoid conflict
+  orderByKey, 
+  limitToLast 
+} from 'firebase/database';
 
-// Helper to safely convert Firestore Timestamp to ISO string
-function parseFirestoreTimestampToISO(timestamp: any): string {
-  if (timestamp instanceof FirestoreTimestamp) {
-    return timestamp.toDate().toISOString();
+// Helper to parse the RTDB timestamp "YYYY-MM-DD HH-MM-SS" (time uses hyphens) to ISO string
+function parseRTDBTimestampToISO(rtdbTimestamp: string): string {
+  if (!rtdbTimestamp || typeof rtdbTimestamp !== 'string') {
+    console.warn("Invalid RTDB timestamp received:", rtdbTimestamp);
+    return new Date().toISOString(); // Fallback
   }
-  if (timestamp && typeof timestamp.toDate === 'function') { // Handle cases where it might be a similar object
-    return timestamp.toDate().toISOString();
+  // Example: "2024-03-15 10-30-00"
+  const parts = rtdbTimestamp.split(' ');
+  if (parts.length !== 2) {
+    console.warn("RTDB timestamp has unexpected format (space missing):", rtdbTimestamp);
+    return new Date().toISOString(); // Fallback
   }
-  console.warn("Received non-Firestore Timestamp object for timestamp field, using current time as fallback:", timestamp);
-  return new Date().toISOString(); // Fallback for unexpected types
+  const datePart = parts[0]; // "YYYY-MM-DD"
+  const timePartWithHyphens = parts[1]; // "HH-MM-SS"
+  
+  // Replace hyphens in time part with colons: "HH:MM:SS"
+  const timePartWithColons = timePartWithHyphens.replace(/-/g, ':');
+  
+  const parsableDateTimeString = `${datePart}T${timePartWithColons}`;
+  
+  const dateObj = new Date(parsableDateTimeString);
+  if (isNaN(dateObj.getTime())) {
+    console.warn("Failed to parse RTDB timestamp into valid date:", parsableDateTimeString, "Original:", rtdbTimestamp);
+    return new Date().toISOString(); // Fallback
+  }
+  return dateObj.toISOString();
 }
 
-// Simplified parsing for data expected to be in Firestore
-// Assumes documents in Firestore 'airQualityReadings' collection
-// directly map to AirQualityReading fields (except id and timestamp type).
-function parseFirestoreDocToReading(id: string, data: any): AirQualityReading {
-  const safeParseFloat = (value: any): number => {
-    const num = parseFloat(value);
-    return isNaN(num) ? 0 : num;
-  };
-  const safeParseInt = (value: any): number => {
-    const num = parseInt(value, 10);
-    return isNaN(num) ? 0 : num;
-  };
-
+function parseRTDBEntryToReading(id: string, data: RTDBRawReading): AirQualityReading {
+  // Basic validation for data structure
+  if (!data || typeof data !== 'object' || !data.temp || !data.humidity || !data.co2 || !data.pm25 || !data.pm10 || !data.location || !data.timestamp) {
+    console.error("Invalid or incomplete RTDBRawReading structure for ID:", id, data);
+    // Return a placeholder or throw an error, depending on desired handling
+    // For now, returning a somewhat valid structure with zeros to avoid app crash
+    return {
+      id: id,
+      timestamp: new Date().toISOString(),
+      temperature: 0,
+      humidity: 0,
+      co2: 0,
+      pm2_5: 0,
+      pm10: 0,
+      latitude: undefined,
+      longitude: undefined,
+    };
+  }
+  
   return {
     id: id,
-    timestamp: parseFirestoreTimestampToISO(data.timestamp),
-    temperature: data.temperature !== undefined ? safeParseFloat(data.temperature) : 0,
-    humidity: data.humidity !== undefined ? safeParseFloat(data.humidity) : 0,
-    co2: data.co2 !== undefined ? safeParseInt(data.co2) : 0,
-    pm2_5: data.pm2_5 !== undefined ? safeParseFloat(data.pm2_5) : 0,
-    pm10: data.pm10 !== undefined ? safeParseFloat(data.pm10) : 0,
-    latitude: data.latitude !== undefined ? safeParseFloat(data.latitude) : undefined,
-    longitude: data.longitude !== undefined ? safeParseFloat(data.longitude) : undefined,
+    timestamp: parseRTDBTimestampToISO(data.timestamp),
+    temperature: data.temp?.value ?? 0,
+    humidity: data.humidity?.value ?? 0,
+    co2: data.co2?.value ?? 0,
+    pm2_5: data.pm25?.value ?? 0,
+    pm10: data.pm10?.value ?? 0,
+    latitude: data.location?.lat ?? undefined,
+    longitude: data.location?.lng ?? undefined,
   };
 }
 
-
-export function useAirQualityReadings(count: number = 96) { // Renamed 'limit' to 'count' to avoid conflict with firestore 'limit'
+export function useAirQualityReadings(count: number = 96) {
   const [readings, setReadings] = useState<AirQualityReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    const readingsCollectionPath = 'airQualityReadings'; 
-    const readingsColRef = collection(firestore, readingsCollectionPath);
+    const readingsPath = 'AirQuality'; 
+    const readingsRef = ref(database, readingsPath);
     
-    // Query to get the last 'count' readings, ordered by timestamp descending
-    const q = firestoreQuery(
-      readingsColRef, 
-      orderBy('timestamp', 'desc'), 
-      limit(count)
+    const dataQuery = rtdbQuery(
+      readingsRef,
+      orderByKey(), // Assumes keys are sortable chronologically e.g., "readingsYYYY-MM-DD_HH-MM-SS"
+      limitToLast(count)
     );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onValue(dataQuery, (snapshot) => {
       try {
-        const readingsArray = querySnapshot.docs.map(doc => {
-          return parseFirestoreDocToReading(doc.id, doc.data());
-        });
-        // As Firestore returns them ordered by timestamp desc, no client-side sort is needed here
-        // If you needed them ascending for the chart, you could .reverse() here or query ascending.
-        // For now, keeping descending as it matches the previous RTDB logic (latest first).
-        setReadings(readingsArray);
+        if (snapshot.exists()) {
+          const rawData = snapshot.val(); // This is an object { key1: value1, key2: value2 }
+          const readingsArray = Object.entries(rawData)
+            .map(([key, value]) => parseRTDBEntryToReading(key, value as RTDBRawReading))
+            // Sort by timestamp descending (most recent first)
+            // RTDB limitToLast with orderByKey gives ascending order by key, so we reverse.
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          
+          setReadings(readingsArray);
+        } else {
+          setReadings([]); // No data found
+        }
         setError(null);
       } catch (err: any) {
-        console.error("Error processing Firestore data:", err);
+        console.error("Error processing RTDB data:", err);
         setError(err instanceof Error ? err : new Error(String(err)));
         setReadings([]);
       } finally {
         setLoading(false);
       }
-    }, (firestoreError) => {
-      console.error("Firestore onSnapshot error:", firestoreError);
-      setError(firestoreError);
+    }, (rtdbError) => {
+      console.error("RTDB onValue error:", rtdbError);
+      setError(rtdbError as Error);
       setReadings([]);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [count]); // Dependency array uses 'count'
+  }, [count]);
 
   return { readings, loading, error };
 }
