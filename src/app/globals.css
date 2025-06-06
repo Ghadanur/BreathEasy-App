@@ -10,7 +10,7 @@
     --card: 0 0% 100% / 0.15; /* Semi-transparent white for glassy effect */
     --card-foreground: 210 25% 25%; /* Dark Grayish Blue */
 
-    --popover: 0 0% 98%; /* Off-white */
+    --popover: 0 0% 100% / 0.85; /* Semi-transparent white, more opaque for dialogs */
     --popover-foreground: 210 25% 25%; /* Dark Grayish Blue */
 
     --primary: 210 70% 50%; /* Bright Clear Blue - #3399FF */
@@ -60,7 +60,7 @@
     --card: 0 0% 10% / 0.15; /* Semi-transparent dark for glassy effect */
     --card-foreground: 210 20% 90%;
 
-    --popover: 210 20% 15%;
+    --popover: 210 20% 10% / 0.85; /* Semi-transparent dark, more opaque for dialogs */
     --popover-foreground: 210 20% 90%;
 
     --primary: 210 70% 50%;
