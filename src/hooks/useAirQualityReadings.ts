@@ -3,11 +3,11 @@
 
 import { useState, useEffect } from 'react';
 import type { AirQualityReading, RTDBRawReading } from '@/types';
-import { database } from '@/lib/firebase'; // Import RTDB instance
+import { database } from '@/lib/firebase';
 import { 
   ref, 
   onValue, 
-  query as rtdbQuery, // Renamed to avoid conflict
+  query as rtdbQuery,
   orderByKey, 
   limitToLast 
 } from 'firebase/database';
@@ -15,19 +15,17 @@ import {
 // Helper to parse the RTDB timestamp "YYYY-MM-DD HH-MM-SS" (time uses hyphens) to ISO string
 function parseRTDBTimestampToISO(rtdbTimestamp: string): string {
   if (!rtdbTimestamp || typeof rtdbTimestamp !== 'string') {
-    console.warn("Invalid RTDB timestamp received:", rtdbTimestamp);
+    console.warn("Invalid RTDB timestamp received for parsing:", rtdbTimestamp);
     return new Date().toISOString(); // Fallback
   }
-  // Example: "2024-03-15 10-30-00"
   const parts = rtdbTimestamp.split(' ');
   if (parts.length !== 2) {
     console.warn("RTDB timestamp has unexpected format (space missing):", rtdbTimestamp);
     return new Date().toISOString(); // Fallback
   }
-  const datePart = parts[0]; // "YYYY-MM-DD"
-  const timePartWithHyphens = parts[1]; // "HH-MM-SS"
+  const datePart = parts[0]; 
+  const timePartWithHyphens = parts[1];
   
-  // Replace hyphens in time part with colons: "HH:MM:SS"
   const timePartWithColons = timePartWithHyphens.replace(/-/g, ':');
   
   const parsableDateTimeString = `${datePart}T${timePartWithColons}`;
@@ -40,35 +38,31 @@ function parseRTDBTimestampToISO(rtdbTimestamp: string): string {
   return dateObj.toISOString();
 }
 
-function parseRTDBEntryToReading(id: string, data: RTDBRawReading): AirQualityReading {
-  // Basic validation for data structure
-  if (!data || typeof data !== 'object' || !data.temp || !data.humidity || !data.co2 || !data.pm25 || !data.pm10 || !data.location || !data.timestamp) {
-    console.error("Invalid or incomplete RTDBRawReading structure for ID:", id, data);
-    // Return a placeholder or throw an error, depending on desired handling
-    // For now, returning a somewhat valid structure with zeros to avoid app crash
-    return {
-      id: id,
-      timestamp: new Date().toISOString(),
-      temperature: 0,
-      humidity: 0,
-      co2: 0,
-      pm2_5: 0,
-      pm10: 0,
-      latitude: undefined,
-      longitude: undefined,
-    };
+// Updated to return null for invalid data
+function parseRTDBEntryToReading(id: string, data: RTDBRawReading): AirQualityReading | null {
+  // Stricter validation for data structure and essential nested properties
+  if (!data || typeof data !== 'object' || 
+      !data.temp || typeof data.temp.value !== 'number' ||
+      !data.humidity || typeof data.humidity.value !== 'number' ||
+      !data.co2 || typeof data.co2.value !== 'number' ||
+      !data.pm25 || typeof data.pm25.value !== 'number' ||
+      !data.pm10 || typeof data.pm10.value !== 'number' ||
+      !data.location || typeof data.location.lat !== 'number' || typeof data.location.lng !== 'number' ||
+      !data.timestamp || typeof data.timestamp !== 'string') {
+    console.warn("Invalid or incomplete RTDBRawReading structure for ID:", id, data);
+    return null; // Return null for invalid entries
   }
   
   return {
     id: id,
     timestamp: parseRTDBTimestampToISO(data.timestamp),
-    temperature: data.temp?.value ?? 0,
-    humidity: data.humidity?.value ?? 0,
-    co2: data.co2?.value ?? 0,
-    pm2_5: data.pm25?.value ?? 0,
-    pm10: data.pm10?.value ?? 0,
-    latitude: data.location?.lat ?? undefined,
-    longitude: data.location?.lng ?? undefined,
+    temperature: data.temp.value,
+    humidity: data.humidity.value,
+    co2: data.co2.value,
+    pm2_5: data.pm25.value,
+    pm10: data.pm10.value,
+    latitude: data.location.lat,
+    longitude: data.location.lng,
   };
 }
 
@@ -84,23 +78,25 @@ export function useAirQualityReadings(count: number = 96) {
     
     const dataQuery = rtdbQuery(
       readingsRef,
-      orderByKey(), // Assumes keys are sortable chronologically e.g., "readingsYYYY-MM-DD_HH-MM-SS"
+      orderByKey(), 
       limitToLast(count)
     );
 
     const unsubscribe = onValue(dataQuery, (snapshot) => {
       try {
         if (snapshot.exists()) {
-          const rawData = snapshot.val(); // This is an object { key1: value1, key2: value2 }
-          const readingsArray = Object.entries(rawData)
+          const rawData = snapshot.val();
+          const parsedReadings = Object.entries(rawData)
             .map(([key, value]) => parseRTDBEntryToReading(key, value as RTDBRawReading))
-            // Sort by timestamp descending (most recent first)
-            // RTDB limitToLast with orderByKey gives ascending order by key, so we reverse.
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            .filter((reading): reading is AirQualityReading => reading !== null); // Filter out null (invalid) entries
           
-          setReadings(readingsArray);
+          // Sort by timestamp descending (most recent first)
+          // RTDB limitToLast with orderByKey gives ascending order by key, so we reverse.
+          parsedReadings.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          
+          setReadings(parsedReadings);
         } else {
-          setReadings([]); // No data found
+          setReadings([]); 
         }
         setError(null);
       } catch (err: any) {
