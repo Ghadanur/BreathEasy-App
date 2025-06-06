@@ -43,9 +43,9 @@ export function AirQualityCard({
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className={cn("h-6 w-6 text-muted-foreground", iconClassName)} />
+            <Icon aria-hidden="true" className={cn("h-6 w-6 text-muted-foreground", iconClassName)} />
           </CardHeader>
-          <CardContent className="flex flex-col items-start justify-center pt-2 flex-grow"> {/* Changed to items-start */}
+          <CardContent className="flex flex-col items-start justify-center pt-2 flex-grow"> 
             <div className="text-2xl font-bold text-card-foreground">
               {displayValue}
               {unit && <span className="text-xs text-muted-foreground ml-1">{unit}</span>}
@@ -57,7 +57,7 @@ export function AirQualityCard({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
-            <Icon className={cn("h-10 w-10", iconClassName ? iconClassName : "text-muted-foreground")} />
+            <Icon aria-hidden="true" className={cn("h-10 w-10", iconClassName ? iconClassName : "text-muted-foreground")} />
             <ShadDialogTitle className="text-2xl text-card-foreground">{title}</ShadDialogTitle>
           </div>
         </DialogHeader>

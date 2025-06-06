@@ -93,7 +93,7 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
         <Card className="shadow-lg col-span-1 md:col-span-2 lg:col-span-3 cursor-pointer hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Lightbulb className="h-6 w-6 mr-2 text-primary" />
+              <Lightbulb aria-hidden="true" className="h-6 w-6 mr-2 text-primary" />
               {cardTitle}
             </CardTitle>
             <CardDescription>
@@ -117,19 +117,19 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[85vh] flex flex-col">
          <DialogHeader>
-            <ShadDialogTitle className="flex items-center"> {/* Removed text-white */}
-              <Lightbulb className="h-6 w-6 mr-2 text-primary" /> {/* Icon color can remain primary or be adjusted */}
+            <ShadDialogTitle className="flex items-center"> 
+              <Lightbulb aria-hidden="true" className="h-6 w-6 mr-2 text-primary" /> 
               {cardTitle}
             </ShadDialogTitle>
           </DialogHeader>
         <ScrollArea className="flex-grow overflow-y-auto">
           <div className="p-1"> 
             <div className="pt-4 space-y-4"> 
-              <CardDescription className="px-6 text-muted-foreground"> {/* Reverted to text-muted-foreground */}
+              <CardDescription className="px-6 text-muted-foreground"> 
                 Get AI-powered suggestions to improve your air quality based on current conditions and your location.
               </CardDescription>
               <div className="px-6"> 
-                <Label htmlFor="location-input-dialog-main">Your Location (e.g., City, State or Lat,Lng)</Label> {/* Removed text-white/90 */}
+                <Label htmlFor="location-input-dialog-main">Your Location (e.g., City, State or Lat,Lng)</Label> 
                 <Input
                   id="location-input-dialog-main"
                   type="text"
@@ -143,7 +143,6 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
                         : "Enter your location"
                   }
                   disabled={isLoading}
-                  // Removed custom input styling to use default theme's input style
                   onClick={(e) => e.stopPropagation()} 
                 />
               </div>
@@ -151,7 +150,7 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
                 <Button onClick={(e) => { e.stopPropagation(); fetchTips(); }} disabled={isLoading || !latestReading} className="w-full">
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
                       Getting Tips...
                     </>
                   ) : (
@@ -161,17 +160,17 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
               </div>
 
               {error && (
-                <div className="text-destructive flex items-center gap-2 p-3 bg-destructive/10 rounded-md mx-6">
-                  <AlertTriangle className="h-5 w-5" />
+                <div role="alert" className="text-destructive flex items-center gap-2 p-3 bg-destructive/10 rounded-md mx-6">
+                  <AlertTriangle aria-hidden="true" className="h-5 w-5" />
                   <p>{error}</p>
                 </div>
               )}
 
               {tips.length > 0 && (
                 <div className="mt-6 px-6">
-                  <h3 className="text-lg font-semibold mb-2 text-foreground">Here are your tips:</h3> {/* Reverted to text-foreground */}
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">Here are your tips:</h3> 
                   <ScrollArea className="h-[200px] rounded-md border p-4 bg-secondary/30">
-                    <ul className="space-y-2 list-disc list-inside text-foreground"> {/* Reverted to text-foreground */}
+                    <ul className="space-y-2 list-disc list-inside text-foreground"> 
                       {tips.map((tip, index) => (
                         <li key={index} className="text-sm">{tip}</li>
                       ))}
@@ -181,7 +180,7 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
               )}
             </div>
             {!latestReading && (
-              <div className="p-6 pt-4 text-sm text-muted-foreground"> {/* Reverted to text-muted-foreground */}
+              <div className="p-6 pt-4 text-sm text-muted-foreground"> 
                   <p>Waiting for current air quality data to enable tips...</p>
               </div>
             )}
@@ -191,4 +190,3 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
     </Dialog>
   );
 }
-

@@ -4,7 +4,7 @@
 import { cn } from '@/lib/utils';
 import React from 'react';
 
-interface CircularGaugeProps {
+interface CircularGaugeProps extends React.SVGProps<SVGSVGElement> {
   value: number;
   maxValue: number;
   strokeColor: string; // Expected to be an HSL string e.g., "hsl(30, 90%, 60%)"
@@ -19,7 +19,6 @@ function lightenHsl(hslColor: string, amount: number = 15): string {
   const match = hslColor.match(/hsl\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)/);
   if (!match) {
     // Fallback if the color string is not in the expected HSL format
-    // This might happen if a CSS variable name or another color format is passed unexpectedly.
     console.warn("lightenHsl: Could not parse HSL color string:", hslColor);
     return hslColor; 
   }
@@ -39,6 +38,7 @@ export function CircularGauge({
   size = 100,
   strokeWidth = 10,
   className,
+  ...rest // Capture other props like aria-label, role
 }: CircularGaugeProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -57,6 +57,7 @@ export function CircularGauge({
       height={size}
       viewBox={viewBox}
       className={cn(className)}
+      {...rest} // Spread ARIA props here
     >
       <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">

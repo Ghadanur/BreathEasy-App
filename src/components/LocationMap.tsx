@@ -63,7 +63,7 @@ export default function LocationMap({ location, isLoading, className }: Location
           <MapContainer
             key={mapKey} 
             center={position}
-            zoom={isDialog ? 15 : 13} // Slightly more zoom in dialog
+            zoom={isDialog ? 15 : 13} 
             scrollWheelZoom={isDialog} 
             style={{ height: '100%', width: '100%' }}
           >
@@ -88,9 +88,9 @@ export default function LocationMap({ location, isLoading, className }: Location
     );
   };
 
-  const headerIcon = isLoading ? <MapPin className="h-6 w-6 text-accent animate-pulse" /> : 
-                     (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') ? <AlertTriangle className="h-6 w-6 text-destructive" /> :
-                     <MapPin className="h-6 w-6 text-accent" />;
+  const headerIcon = isLoading ? <MapPin aria-hidden="true" className="h-6 w-6 text-accent animate-pulse" /> : 
+                     (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') ? <AlertTriangle aria-hidden="true" className="h-6 w-6 text-destructive" /> :
+                     <MapPin aria-hidden="true" className="h-6 w-6 text-accent" />;
 
   return (
     <Dialog>
@@ -108,7 +108,6 @@ export default function LocationMap({ location, isLoading, className }: Location
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl h-[85vh] flex flex-col p-4">
         <DialogHeader className="pb-2">
-          {/* Removed text-white to use default dialog title color */}
           <ShadDialogTitle className="text-lg font-semibold">Sensor Location</ShadDialogTitle>
         </DialogHeader>
         <div className="flex-grow">
@@ -125,4 +124,3 @@ interface LocationMapProps {
   isLoading: boolean;
   className?: string;
 }
-

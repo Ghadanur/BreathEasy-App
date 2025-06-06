@@ -1,3 +1,4 @@
+
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,8 +16,11 @@ export function LoadingSpinner({ size = 'md', className, text }: LoadingSpinnerP
   };
 
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-4", className)}>
-      <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} />
+    <div 
+      className={cn("flex flex-col items-center justify-center gap-4", className)}
+      role={text ? "status" : undefined} // Add role="status" if text is present for screen reader announcement
+    >
+      <Loader2 aria-hidden="true" className={cn('animate-spin text-primary', sizeClasses[size])} />
       {text && <p className="text-muted-foreground">{text}</p>}
     </div>
   );

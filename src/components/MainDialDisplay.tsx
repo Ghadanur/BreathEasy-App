@@ -27,21 +27,21 @@ interface Dimensions {
   unitFontSizePx: number;
   cardOverallPadding: string;
   cardInternalGap: string;
-  gaugeMarginClasses: string; // Retained for potential future use, but likely 'my-0'
+  gaugeMarginClasses: string; 
 }
 
 // Base configuration for XL screens, others will scale from this
 const xlDimsConfigBase = {
   cardSizeClass: 'w-[28rem] h-[28rem]', // 448px
-  cardOverallPadding: 'p-5', // 20px
-  cardInternalGap: 'gap-2', // Gap between header and content blocks
-  baseGaugeSize: 280, // Diameter of the gauge SVG
-  iconSizeRatio: 1/6, // Icon is above the gauge
-  titleFontSizeRatio: 1/11, // Title is above the gauge
-  strokeWidthRatio: 1/12, // Gauge stroke thickness
-  valueFontSizeRatio: 1/5, // Value text inside the gauge
-  unitFontSizeRatio: 1/12, // Unit text inside the gauge
-  gaugeMarginClasses: 'my-0', // No extra margin for the gauge container
+  cardOverallPadding: 'p-5', 
+  cardInternalGap: 'gap-2', 
+  baseGaugeSize: 280, 
+  iconSizeRatio: 1/6, 
+  titleFontSizeRatio: 1/11, 
+  strokeWidthRatio: 1/12, 
+  valueFontSizeRatio: 1/5, 
+  unitFontSizeRatio: 1/12, 
+  gaugeMarginClasses: 'my-0', 
 };
 
 const calculateDimensions = (screenWidth: number): Dimensions => {
@@ -106,7 +106,7 @@ export function MainDialDisplay({
   maxValue,
   strokeColor,
 }: MainDialDisplayProps) {
-  const [dims, setDims] = useState<Dimensions>(calculateDimensions(1280)); // Default to XL size for SSR
+  const [dims, setDims] = useState<Dimensions>(calculateDimensions(1280)); 
 
   useEffect(() => {
     const handleResize = () => {
@@ -121,6 +121,8 @@ export function MainDialDisplay({
   }, []);
 
   const displayValue = value.toFixed(title === "CO₂" || title === "PM2.5" || title === "PM10" || title.includes("PM") ? 0 : 1);
+  const gaugePercentage = Math.round((value / maxValue) * 100);
+  const gaugeAriaLabel = `${title}: ${displayValue}${unit || ''}. This is ${gaugePercentage}% of the maximum value.`;
 
   return (
     <Card className={cn(
@@ -134,6 +136,7 @@ export function MainDialDisplay({
       )}>
         {Icon && (
           <Icon
+            aria-hidden="true"
             className={cn(iconClassName, "transition-all duration-300 ease-in-out")}
             style={{ width: `${dims.iconSizePx}px`, height: `${dims.iconSizePx}px`}}
           />
@@ -146,17 +149,17 @@ export function MainDialDisplay({
         </CardTitle>
       </CardHeader>
 
-      {/* CardContent now serves as the relative container for the gauge and the overlaid text */}
       <CardContent className={cn(
-        "relative flex items-center justify-center p-0 transition-all duration-300 ease-in-out mt-auto mb-auto", // mt-auto mb-auto with flex-col on parent helps center
-         // Ensure CardContent can take up space if needed, or size it explicitly based on gauge
-        `w-[${dims.baseGaugeSize}px] h-[${dims.baseGaugeSize}px]` // Make content area match gauge size
+        "relative flex items-center justify-center p-0 transition-all duration-300 ease-in-out mt-auto mb-auto", 
+        `w-[${dims.baseGaugeSize}px] h-[${dims.baseGaugeSize}px]` 
       )}>
         <CircularGauge
+          role="img"
+          aria-label={gaugeAriaLabel}
           value={value}
           maxValue={maxValue}
           strokeColor={strokeColor}
-          size={dims.baseGaugeSize} // This is width and height of SVG
+          size={dims.baseGaugeSize} 
           strokeWidth={dims.gaugeStrokeWidthPx}
           className={cn(dims.gaugeMarginClasses, "transition-all duration-300 ease-in-out")}
         />
@@ -174,7 +177,7 @@ export function MainDialDisplay({
           </div>
           {unit && (
             <span
-              className="text-muted-foreground" // Using muted-foreground for the unit
+              className="text-muted-foreground" 
               style={{ fontSize: `${dims.unitFontSizePx}px`, lineHeight: '1' }}
             >
               {unit}
