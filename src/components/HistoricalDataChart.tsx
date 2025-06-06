@@ -50,12 +50,16 @@ export function HistoricalDataChart({ data, dataKey, title, color = "hsl(var(--c
   const ChartComponent = LineChart; 
   const DataComponent = Line;
 
+  const chartAriaLabel = `Line chart showing ${title}. Time is on the x-axis, and ${String(dataKey)} values ${unit ? `(in ${unit})` : ''} are on the y-axis. Currently displaying ${formattedData.length} data points.`;
+
   const renderChart = (isModal: boolean = false) => (
     <ChartContainer 
-      config={chartDisplayConfig} 
+      config={chartDisplayConfig}
+      role="img"
+      aria-label={chartAriaLabel}
       className={cn(
         "w-full", 
-        isModal ? "h-[70vh]" : "aspect-[16/7]" // Adjusted aspect ratio for non-modal chart
+        isModal ? "h-[70vh]" : "aspect-[16/7]"
       )}
     >
       <ChartComponent data={formattedData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>

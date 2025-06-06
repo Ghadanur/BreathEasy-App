@@ -169,7 +169,10 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
               {tips.length > 0 && (
                 <div className="mt-6 px-6">
                   <h3 className="text-lg font-semibold mb-2 text-foreground">Here are your tips:</h3> 
-                  <ScrollArea className="h-[200px] rounded-md border p-4 bg-secondary/30">
+                  <ScrollArea 
+                    className="h-[200px] rounded-md border p-4 bg-secondary/30"
+                    aria-label="List of personalized air quality tips"
+                  >
                     <ul className="space-y-2 list-disc list-inside text-foreground"> 
                       {tips.map((tip, index) => (
                         <li key={index} className="text-sm">{tip}</li>

@@ -42,6 +42,16 @@ export default function LocationMap({ location, isLoading, className }: Location
   const mapKey = location ? `map-${location.latitude}-${location.longitude}` : 'map-loading-or-no-location';
   const position: L.LatLngExpression | undefined = location ? [location.latitude, location.longitude] : undefined;
 
+  let cardAriaLabel = "Interactive map of current sensor location.";
+  if (isLoading) {
+    cardAriaLabel = "Map of current sensor location, currently loading.";
+  } else if (location && typeof location.latitude === 'number' && typeof location.longitude === 'number') {
+    cardAriaLabel = `Map showing sensor location at latitude ${location.latitude.toFixed(2)}, longitude ${location.longitude.toFixed(2)}. ${location.address || 'Address not available.'} Click to view larger map.`;
+  } else {
+    cardAriaLabel = "Map of current sensor location, data not available.";
+  }
+
+
   const renderMapContent = (isDialog: boolean) => {
     if (isLoading) {
       return (
@@ -66,6 +76,7 @@ export default function LocationMap({ location, isLoading, className }: Location
             zoom={isDialog ? 15 : 13} 
             scrollWheelZoom={isDialog} 
             style={{ height: '100%', width: '100%' }}
+            aria-hidden="true" // The map itself is complex, context is on the card trigger
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -95,7 +106,7 @@ export default function LocationMap({ location, isLoading, className }: Location
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Card className={cn(cardBaseClass, className)}>
+        <Card className={cn(cardBaseClass, className)} aria-label={cardAriaLabel}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Current Location</CardTitle>
             {headerIcon}
