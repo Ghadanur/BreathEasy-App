@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { AirQualityReading, RawFirestoreReading, FirestoreTimestampString } from '@/types';
-import { firestore } from '@/lib/firebase'; // Use firestore
+import { firestore } from '@/lib/firebase'; 
 import { 
   collection, 
   query, 
@@ -34,14 +34,16 @@ function parseFirestoreTimestampToISO(firestoreTimestamp: FirestoreTimestampStri
 
 // Parses a Firestore document (structured according to ESP32's uploadToFirestore) into AirQualityReading
 function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): AirQualityReading | null {
-  const rawData = doc.data() as RawFirestoreReading['fields']; // We expect the direct fields map
+  const documentData = doc.data(); // This is the full document, e.g., { fields: { ... } }
 
-  if (!rawData || typeof rawData !== 'object') {
-    console.warn("Invalid Firestore document data structure for ID:", doc.id, rawData);
+  // Check if 'fields' property exists and is an object
+  if (!documentData || !documentData.fields || typeof documentData.fields !== 'object') {
+    console.warn("Invalid Firestore document: 'fields' property missing or not an object. ID:", doc.id, documentData);
     return null;
   }
-  
-  // Stricter validation for data structure and essential nested properties
+
+  const rawData = documentData.fields as RawFirestoreReading['fields']; // Now rawData is the inner 'fields' object
+
   const tempValue = rawData.temp?.doubleValue;
   const humidityValue = rawData.humidity?.doubleValue;
   const co2Value = rawData.co2?.doubleValue;
@@ -58,10 +60,10 @@ function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): A
     typeof pm25Value !== 'number' ||
     typeof pm10Value !== 'number' ||
     typeof timestampString !== 'string'
-    // Latitude and longitude are optional based on previous designs,
-    // but if present, should be numbers
+    // Latitude and longitude are optional, but if present, should be numbers.
+    // No need to fail parsing if GPS data is temporarily unavailable from sensor.
   ) {
-    console.warn("Incomplete or malformed data in Firestore document:", doc.id, rawData);
+    console.warn("Incomplete or malformed data within 'fields' object in Firestore document:", doc.id, rawData);
     return null;
   }
 
@@ -90,7 +92,7 @@ export function useAirQualityReadings(count: number = 96) {
     
     const dataQuery = query(
       readingsColRef,
-      orderBy('timestamp', 'desc'), // Order by the string timestamp field
+      orderBy('fields.timestamp.stringValue', 'desc'), // Corrected: Order by the nested string timestamp
       limit(count)
     );
 
@@ -100,8 +102,6 @@ export function useAirQualityReadings(count: number = 96) {
           .map(doc => parseFirestoreDocToReading(doc))
           .filter((reading): reading is AirQualityReading => reading !== null); // Filter out null (invalid) entries
         
-        // Data is already sorted by Firestore in descending order by timestamp string.
-        // If "YYYY-MM-DD HH:MM:SS" string format is consistent, this should be chronologically correct.
         setReadings(parsedReadings);
         setError(null);
       } catch (err: any) {
