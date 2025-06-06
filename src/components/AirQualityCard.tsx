@@ -58,11 +58,11 @@ export function AirQualityCard({
         <DialogHeader className="items-center text-center sm:text-left sm:items-start">
           <div className="flex items-center space-x-3 mb-3">
             <Icon aria-hidden="true" className={cn("h-10 w-10", iconClassName ? iconClassName : "text-muted-foreground")} />
-            <ShadDialogTitle className="text-2xl text-card-foreground">{title}</ShadDialogTitle>
+            <ShadDialogTitle className="text-2xl text-popover-foreground">{title}</ShadDialogTitle>
           </div>
         </DialogHeader>
         <div className="py-4 text-center sm:text-left">
-          <div className="text-5xl font-bold text-card-foreground">
+          <div className="text-5xl font-bold text-popover-foreground">
             {displayValue}
             {unit && <span className="text-xl font-medium ml-1 text-muted-foreground">{unit}</span>}
           </div>

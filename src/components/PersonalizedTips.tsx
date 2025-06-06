@@ -117,7 +117,7 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[85vh] flex flex-col">
          <DialogHeader>
-            <ShadDialogTitle className="flex items-center"> 
+            <ShadDialogTitle className="flex items-center text-popover-foreground"> 
               <Lightbulb aria-hidden="true" className="h-6 w-6 mr-2 text-primary" /> 
               {cardTitle}
             </ShadDialogTitle>
@@ -125,11 +125,11 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
         <ScrollArea className="flex-grow overflow-y-auto">
           <div className="p-1"> 
             <div className="pt-4 space-y-4"> 
-              <CardDescription className="px-6 text-muted-foreground"> 
+              <div className="px-6 text-sm text-popover-foreground"> 
                 Get AI-powered suggestions to improve your air quality based on current conditions and your location.
-              </CardDescription>
+              </div>
               <div className="px-6"> 
-                <Label htmlFor="location-input-dialog-main">Your Location (e.g., City, State or Lat,Lng)</Label> 
+                <Label htmlFor="location-input-dialog-main" className="text-popover-foreground">Your Location (e.g., City, State or Lat,Lng)</Label> 
                 <Input
                   id="location-input-dialog-main"
                   type="text"
@@ -144,6 +144,7 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
                   }
                   disabled={isLoading}
                   onClick={(e) => e.stopPropagation()} 
+                  className="text-popover-foreground placeholder:text-muted-foreground/70"
                 />
               </div>
               <div className="px-6"> 
@@ -160,7 +161,7 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
               </div>
 
               {error && (
-                <div role="alert" className="text-destructive flex items-center gap-2 p-3 bg-destructive/10 rounded-md mx-6">
+                <div role="alert" className="text-destructive-foreground flex items-center gap-2 p-3 bg-destructive/80 rounded-md mx-6">
                   <AlertTriangle aria-hidden="true" className="h-5 w-5" />
                   <p>{error}</p>
                 </div>
@@ -168,12 +169,12 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
 
               {tips.length > 0 && (
                 <div className="mt-6 px-6">
-                  <h3 className="text-lg font-semibold mb-2 text-foreground">Here are your tips:</h3> 
+                  <h3 className="text-lg font-semibold mb-2 text-popover-foreground">Here are your tips:</h3> 
                   <ScrollArea 
-                    className="h-[200px] rounded-md border p-4 bg-secondary/30"
+                    className="h-[200px] rounded-md border p-4 bg-popover-foreground/10" 
                     aria-label="List of personalized air quality tips"
                   >
-                    <ul className="space-y-2 list-disc list-inside text-foreground"> 
+                    <ul className="space-y-2 list-disc list-inside text-popover-foreground"> 
                       {tips.map((tip, index) => (
                         <li key={index} className="text-sm">{tip}</li>
                       ))}
