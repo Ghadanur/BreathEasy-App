@@ -97,6 +97,52 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  .high-contrast {
+    --background: 0 0% 0%; /* Black */
+    --foreground: 0 0% 100%; /* White */
+
+    --card: 0 0% 5%; /* Very dark gray */
+    --card-foreground: 0 0% 100%; /* White */
+
+    --popover: 0 0% 5%; /* Very dark gray */
+    --popover-foreground: 0 0% 100%; /* White */
+
+    --primary: 60 100% 50%; /* Bright Yellow */
+    --primary-foreground: 0 0% 0%; /* Black */
+
+    --secondary: 0 0% 80%; /* Light gray for secondary text on black bg */
+    --secondary-foreground: 60 100% 50%; /* Bright Yellow */
+
+    --muted: 0 0% 15%; /* Darker muted */
+    --muted-foreground: 0 0% 80%; /* Lighter muted text */
+
+    --accent: 200 100% 50%; /* Bright Cyan */
+    --accent-foreground: 0 0% 0%; /* Black */
+
+    --destructive: 0 100% 50%; /* Bright Red */
+    --destructive-foreground: 0 0% 0%; /* Black */
+
+    --border: 0 0% 60%; /* Brighter border */
+    --input: 0 0% 10%; /* Dark input background */
+    --ring: 60 100% 60%; /* Lighter Yellow for focus rings */
+
+    --chart-1: 60 100% 50%;   /* Yellow */
+    --chart-2: 200 100% 50%;  /* Cyan */
+    --chart-3: 300 100% 50%;  /* Magenta */
+    --chart-4: 120 100% 45%;  /* Green ( थोड़ा dark to contrast with white text if needed) */
+    --chart-5: 30 100% 50%;   /* Orange */
+
+    /* Sidebar colors for high contrast */
+    --sidebar-background: 0 0% 0%; /* Black */
+    --sidebar-foreground: 0 0% 100%; /* White */
+    --sidebar-primary: 60 100% 50%; /* Yellow */
+    --sidebar-primary-foreground: 0 0% 0%; /* Black */
+    --sidebar-accent: 0 0% 20%; /* Dark Gray */
+    --sidebar-accent-foreground: 0 0% 100%; /* White */
+    --sidebar-border: 0 0% 40%; /* Mid Gray */
+    --sidebar-ring: 60 100% 50%; /* Yellow */
+  }
 }
 
 @layer base {
@@ -106,8 +152,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Ensure html also picks up background in high contrast */
+  html.high-contrast {
+    @apply bg-background text-foreground;
+  }
 }
 
-/* Removed the @layer utilities block that contained the custom keyframes */
-/* Tailwind will generate these from tailwind.config.ts */
-
+/* Hide decorative background effects in high contrast mode */
+.high-contrast #background-effects-container {
+  display: none !important;
+}
