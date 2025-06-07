@@ -54,7 +54,8 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
 
     setIsLoading(true);
     setError(null);
-    setTips([]);
+    // Clear tips before fetching to ensure aria-live region announces new content
+    setTips([]); 
 
     try {
       const inputData = {
@@ -174,7 +175,10 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
                     className="h-[200px] rounded-md border p-4 bg-popover-foreground/10" 
                     aria-label="List of personalized air quality tips"
                   >
-                    <ul className="space-y-2 list-disc list-inside text-popover-foreground"> 
+                    <ul 
+                      aria-live="polite" // Announce changes to this list
+                      className="space-y-2 list-disc list-inside text-popover-foreground"
+                    > 
                       {tips.map((tip, index) => (
                         <li key={index} className="text-sm">{tip}</li>
                       ))}
@@ -194,3 +198,5 @@ export function PersonalizedTips({ latestReading, derivedLocation }: Personalize
     </Dialog>
   );
 }
+
+    
