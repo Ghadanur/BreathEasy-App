@@ -166,7 +166,7 @@ export function HomePageClient() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-black to-primary bg-clip-text text-transparent font-sans">
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-black [.high-contrast_&]:from-foreground to-primary bg-clip-text text-transparent font-sans">
           Air Quality Dashboard
         </h1>
       </div>
@@ -290,3 +290,4 @@ export function HomePageClient() {
     </div>
   );
 }
+
