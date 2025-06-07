@@ -10,7 +10,8 @@ import { PersonalizedTips } from '@/components/PersonalizedTips';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { Thermometer, Droplets, MountainSnow, CloudFog, Cloudy, LucideIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useAirQualityReadings } from '@/hooks/useAirQualityReadings';
+import { useAirQualityReadings } from '@/hooks/useAirQualityReadings'; // For Firestore historical data
+import { useCurrentRtdbReading } from '@/hooks/useCurrentRtdbReading'; // For RTDB current data
 import { cn } from '@/lib/utils';
 
 const LocationMap = dynamic(() => import('@/components/LocationMap').then(mod => mod.default), {
@@ -70,7 +71,7 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
     unit: "ppm",
     icon: MountainSnow,
     iconClassName: "", // Will be set dynamically
-    description: "Carbon Dioxide Level (MQ135)",
+    description: "Carbon Dioxide Level",
   },
   pm2_5: {
     title: "PM2.5",
@@ -102,27 +103,33 @@ const chartColorMapping: Record<keyof typeof DIAL_CONFIGS, string | ((value: num
 
 
 export function HomePageClient() {
-  const { readings: historicalData, loading: airQualityLoading, error: airQualityError } = useAirQualityReadings(96);
-  const latestReading = historicalData && historicalData.length > 0 ? historicalData[0] : null;
+  const { readings: historicalData, loading: firestoreLoading, error: firestoreError } = useAirQualityReadings(96);
+  const { currentReading: rtdbReading, loadingRtdb, errorRtdb } = useCurrentRtdbReading();
 
   const [location, setLocation] = useState<LocationData | null>(null);
   const [activeDialKey, setActiveDialKey] = useState<keyof typeof DIAL_CONFIGS>('temperature');
 
+  // Determine the latest reading: prioritize RTDB, then Firestore, then null
+  const latestReading = rtdbReading ?? (historicalData && historicalData.length > 0 ? historicalData[0] : null);
+  const overallLoading = firestoreLoading || loadingRtdb;
+
+
   useEffect(() => {
+    // Update location based on the determined latestReading
     if (latestReading?.latitude && latestReading?.longitude) {
       setLocation({
         latitude: latestReading.latitude,
         longitude: latestReading.longitude,
       });
-    } else if (!airQualityLoading && latestReading) {
-      setLocation(null);
-    } else if (!airQualityLoading && !latestReading) {
+    } else if (!overallLoading && latestReading) { // latestReading exists but no lat/lon
+      setLocation(null); 
+    } else if (!overallLoading && !latestReading) { // No data at all
         setLocation(null);
     }
-  }, [latestReading, airQualityLoading]);
+  }, [latestReading, overallLoading]);
 
 
-  if (airQualityLoading && historicalData.length === 0) {
+  if (overallLoading && !latestReading && historicalData.length === 0) {
     return (
       <div className="container mx-auto p-4 min-h-[calc(100vh-4rem)] flex items-center justify-center">
         <LoadingSpinner text="Loading Air Quality Data..." size="lg" />
@@ -130,12 +137,13 @@ export function HomePageClient() {
     );
   }
 
-  if (airQualityError) {
+  if (firestoreError || errorRtdb) {
+    const errorToShow = firestoreError || errorRtdb;
     return (
       <div className="container mx-auto p-4 text-center">
         <h1 className="text-2xl font-bold text-destructive mb-4">Error Loading Data</h1>
-        <p className="text-muted-foreground">Could not load air quality data from Firebase. Please check your connection and configuration.</p>
-        <p className="text-xs text-muted-foreground mt-2">Details: {airQualityError.message}</p>
+        <p className="text-muted-foreground">Could not load air quality data. Please check your connection and configuration.</p>
+        {errorToShow && <p className="text-xs text-muted-foreground mt-2">Details: {errorToShow.message}</p>}
       </div>
     );
   }
@@ -163,10 +171,8 @@ export function HomePageClient() {
         </h1>
       </div>
 
-      {/* Expanded View: Dial (Left) + Chart (Right) */}
       {latestReading && activeDialKey && currentMainDialConfig && activeChartConfig && (
          <section className="mb-6 md:mb-8 flex flex-col md:flex-row md:justify-around items-center md:items-start gap-6 md:gap-8">
-          {/* Left Column: Dial */}
           <div className="flex flex-col items-center w-full md:w-auto">
             <MainDialDisplay
               title={currentMainDialConfig.title}
@@ -179,14 +185,13 @@ export function HomePageClient() {
             />
           </div>
 
-          {/* Right Column: Historical Chart for Active Metric */}
           {(historicalData.length > 0) && (
             <div className="w-full md:flex-1 md:max-w-2xl lg:max-w-4xl mt-6 md:mt-0 flex flex-col gap-6 md:gap-8">
               <HistoricalDataChart
-                  data={historicalData}
+                  data={historicalData} // Historical charts always use Firestore data
                   dataKey={activeDialKey as keyof AirQualityReading}
                   title={`${activeChartConfig.title} Trend`}
-                  color={currentStrokeColorForMainDial}
+                  color={currentStrokeColorForMainDial} // Color derived from latest value for consistency
                   unit={activeChartConfig.unit}
               />
             </div>
@@ -195,7 +200,6 @@ export function HomePageClient() {
       )}
 
 
-      {/* Grid of All Rectangular Cards */}
       <section className="flex flex-wrap justify-center gap-4 md:gap-6">
         {latestReading ? (
           <>
@@ -224,11 +228,11 @@ export function HomePageClient() {
             })}
           </>
         ) : (
-          !airQualityLoading && <p className="col-span-full text-center text-muted-foreground">No current air quality data available.</p>
+          !overallLoading && <p className="col-span-full text-center text-muted-foreground">No current air quality data available.</p>
         )}
       </section>
 
-      <LocationMap location={location} isLoading={airQualityLoading} className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5" />
+      <LocationMap location={location} isLoading={overallLoading} className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5" />
 
 
       <section className="space-y-6">
@@ -244,8 +248,11 @@ export function HomePageClient() {
 
                 let colorForChart: string;
                 const colorMapEntry = chartColorMapping[key];
+                // Use latestReading for CO2 color calculation, even for historical charts, to keep color consistent if it's dynamic
+                const valueForColor = latestReading?.[key as keyof AirQualityReading] as number ?? 0;
+
                 if (typeof colorMapEntry === 'function') {
-                  colorForChart = colorMapEntry(latestReading?.[key as keyof AirQualityReading] as number ?? 0);
+                  colorForChart = colorMapEntry(valueForColor);
                 } else {
                   colorForChart = colorMapEntry;
                 }
@@ -253,7 +260,7 @@ export function HomePageClient() {
                 return (
                   <HistoricalDataChart
                     key={key}
-                    data={historicalData}
+                    data={historicalData} // Historical charts always use Firestore data
                     dataKey={key as keyof AirQualityReading}
                     title={`${config.title} Trend`}
                     color={colorForChart}
@@ -263,15 +270,14 @@ export function HomePageClient() {
             })}
           </div>
         ) : (
-          !airQualityLoading && <p className="text-center text-muted-foreground">No historical data available.</p>
+          !firestoreLoading && <p className="text-center text-muted-foreground">No historical data available.</p>
         )}
       </section>
 
-      {/* Personalized Tips Section */}
       <section className="my-6 md:my-8 flex justify-center">
         <div className="w-full max-w-lg">
           <PersonalizedTips
-            latestReading={latestReading}
+            latestReading={latestReading} // Uses the combined latest reading
             derivedLocation={location}
           />
         </div>
@@ -284,4 +290,3 @@ export function HomePageClient() {
     </div>
   );
 }
-

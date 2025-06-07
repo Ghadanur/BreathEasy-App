@@ -1,6 +1,6 @@
 
 export interface AirQualityReading {
-  id: string; // Firestore document ID
+  id: string; // Firestore document ID or "rtdb-current"
   timestamp: string; // ISO string format (e.g., "2023-10-27T14:30:15.000Z")
   temperature: number; // Celsius
   humidity: number; // Percentage
@@ -22,8 +22,8 @@ export interface PersonalizedTip {
   text: string;
 }
 
-// Type for the string timestamp as stored in Firestore by the ESP32
-export type FirestoreTimestampString = string; // Format: "YYYY-MM-DD HH:MM:SS"
+// Type for the string timestamp as stored in Firestore by the ESP32 or RTDB
+export type DateTimeString = string; // Format: "YYYY-MM-DD HH:MM:SS"
 
 // Raw structure of a document from Firestore 'readings' collection,
 // based on ESP32's uploadToFirestore function.
@@ -42,16 +42,29 @@ export interface RawFirestoreReading {
         };
       };
     };
-    timestamp?: { stringValue: FirestoreTimestampString };
+    timestamp?: { stringValue: DateTimeString };
   };
-  name?: string; // Document path, e.g., projects/projectID/databases/(default)/documents/readings/documentID
+  name?: string; // Document path
   createTime?: string;
   updateTime?: string;
 }
 
+// Structure for /CurrentValues in Realtime Database
+export interface RTDBCurrentValues {
+  pm25?: number;
+  pm10?: number;
+  co2?: number;
+  temp?: number;
+  humidity?: number;
+  location?: {
+    lat?: number;
+    lng?: number;
+  };
+  lastUpdated?: DateTimeString; // "YYYY-MM-DD HH:MM:SS"
+}
 
+// Deprecated types, kept for reference if needed to understand older logic
 // Structure for individual sensor metric from Firebase (Legacy or general)
-// This might be deprecated if RTDBRawReading is the sole source for current values.
 export interface FirebaseSensorMetric {
   value: number;
   unit?: string;
