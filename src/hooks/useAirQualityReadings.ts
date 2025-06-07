@@ -3,12 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import type { AirQualityReading, RawFirestoreReading, FirestoreTimestampString } from '@/types';
-import { firestore } from '@/lib/firebase'; 
-import { 
-  collection, 
-  query, 
-  orderBy, 
-  limit, 
+import { firestore } from '@/lib/firebase';
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
   onSnapshot,
   DocumentData,
   QueryDocumentSnapshot
@@ -17,27 +17,31 @@ import {
 // Helper to parse the Firestore string timestamp "YYYY-MM-DD HH:MM:SS" to ISO string
 function parseFirestoreTimestampToISO(firestoreTimestamp: FirestoreTimestampString | undefined): string | null {
   if (!firestoreTimestamp || typeof firestoreTimestamp !== 'string') {
-    console.warn("Invalid or missing Firestore timestamp string for parsing:", firestoreTimestamp);
-    return null; 
+    console.warn("[parseFirestoreTimestampToISO] Invalid or missing Firestore timestamp string for parsing:", firestoreTimestamp);
+    return null;
   }
-  // The format "YYYY-MM-DD HH:MM:SS" is directly parsable by the Date constructor
-  // by replacing the space with 'T'
   const parsableDateTimeString = firestoreTimestamp.replace(" ", "T");
   const dateObj = new Date(parsableDateTimeString);
 
   if (isNaN(dateObj.getTime())) {
-    console.warn("Failed to parse Firestore timestamp string into valid date:", parsableDateTimeString, "Original:", firestoreTimestamp);
-    return null; 
+    console.warn("[parseFirestoreTimestampToISO] Failed to parse Firestore timestamp string into valid date:", parsableDateTimeString, "Original:", firestoreTimestamp);
+    return null;
   }
   return dateObj.toISOString();
 }
 
 // Parses a Firestore document (structured according to ESP32's uploadToFirestore) into AirQualityReading
 function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): AirQualityReading | null {
-  const documentData = doc.data(); 
+  const documentData = doc.data();
+  const docId = doc.id;
 
-  if (!documentData || !documentData.fields || typeof documentData.fields !== 'object') {
-    console.warn("Invalid Firestore document: 'fields' property missing or not an object. ID:", doc.id, documentData);
+  if (!documentData) {
+    console.warn(`[parseFirestoreDocToReading] Document ID: ${docId} - No data found.`);
+    return null;
+  }
+
+  if (typeof documentData.fields !== 'object' || documentData.fields === null) {
+    console.warn(`[parseFirestoreDocToReading] Document ID: ${docId} - 'fields' property is missing, not an object, or null. Document data:`, JSON.stringify(documentData));
     return null;
   }
 
@@ -54,73 +58,74 @@ function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): A
 
   const isoTimestamp = parseFirestoreTimestampToISO(timestampString);
 
-  if (
-    typeof tempValue !== 'number' ||
-    typeof humidityValue !== 'number' ||
-    typeof co2Value !== 'number' ||
-    typeof pm25Value !== 'number' ||
-    typeof pm10Value !== 'number' ||
-    isoTimestamp === null // Check if timestamp parsing failed
-  ) {
-    let reason = "";
-    if (typeof tempValue !== 'number') reason += "tempValue invalid; ";
-    if (typeof humidityValue !== 'number') reason += "humidityValue invalid; ";
-    if (typeof co2Value !== 'number') reason += "co2Value invalid; ";
-    if (typeof pm25Value !== 'number') reason += "pm25Value invalid; ";
-    if (typeof pm10Value !== 'number') reason += "pm10Value invalid; ";
-    if (isoTimestamp === null) reason += "timestamp invalid; ";
-    console.warn(`Incomplete or malformed data in Firestore document ID: ${doc.id}. Reason: ${reason} Raw fields:`, rawData);
+  const validationIssues: string[] = [];
+  if (typeof tempValue !== 'number') validationIssues.push(`tempValue (raw: ${rawData.temp?.doubleValue}) is not a number.`);
+  if (typeof humidityValue !== 'number') validationIssues.push(`humidityValue (raw: ${rawData.humidity?.doubleValue}) is not a number.`);
+  if (typeof co2Value !== 'number') validationIssues.push(`co2Value (raw: ${rawData.co2?.doubleValue}) is not a number.`);
+  if (typeof pm25Value !== 'number') validationIssues.push(`pm25Value (raw: ${rawData.pm25?.doubleValue}) is not a number.`);
+  if (typeof pm10Value !== 'number') validationIssues.push(`pm10Value (raw: ${rawData.pm10?.doubleValue}) is not a number.`);
+  if (isoTimestamp === null) validationIssues.push(`timestampString ('${timestampString}') failed to parse or was missing.`);
+
+  if (validationIssues.length > 0) {
+    console.warn(`[parseFirestoreDocToReading] Document ID: ${docId} - Incomplete or malformed data. Issues: ${validationIssues.join('; ')}. Raw fields data:`, JSON.stringify(rawData));
     return null;
   }
 
   return {
-    id: doc.id,
-    timestamp: isoTimestamp,
-    temperature: tempValue,
-    humidity: humidityValue,
-    co2: co2Value,
-    pm2_5: pm25Value,
-    pm10: pm10Value,
+    id: docId,
+    timestamp: isoTimestamp!, // Not null here due to validation
+    temperature: tempValue!,
+    humidity: humidityValue!,
+    co2: co2Value!,
+    pm2_5: pm25Value!,
+    pm10: pm10Value!,
     latitude: typeof latValue === 'number' ? latValue : undefined,
     longitude: typeof lonValue === 'number' ? lonValue : undefined,
   };
 }
 
 
-export function useAirQualityReadings(count: number = 96) {
+export function useAirQualityReadings(count: number = 96) { // Default count for historical data
   const [readings, setReadings] = useState<AirQualityReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    setError(null); // Clear previous errors on new effect run
+    setError(null);
     const readingsColRef = collection(firestore, 'readings');
-    
+
     const dataQuery = query(
       readingsColRef,
-      orderBy('fields.timestamp.stringValue', 'desc'), 
+      orderBy('fields.timestamp.stringValue', 'desc'),
       limit(count)
     );
 
     const unsubscribe = onSnapshot(dataQuery, (querySnapshot) => {
       try {
+        if (querySnapshot.empty) {
+          console.log("[useAirQualityReadings] Firestore query returned an empty snapshot for 'readings' collection.");
+        }
         const parsedReadings = querySnapshot.docs
           .map(doc => parseFirestoreDocToReading(doc))
-          .filter((reading): reading is AirQualityReading => reading !== null); 
+          .filter((reading): reading is AirQualityReading => reading !== null);
+
+        if (querySnapshot.docs.length > 0 && parsedReadings.length === 0) {
+          console.warn("[useAirQualityReadings] Firestore query returned documents, but all failed parsing. Check parsing logic and data structure in Firestore for 'readings' collection.");
+        }
         
         setReadings(parsedReadings);
-        setError(null); 
+        setError(null);
       } catch (err: any) {
-        console.error("Error processing Firestore data snapshot:", err);
+        console.error("[useAirQualityReadings] Error processing Firestore data snapshot:", err);
         setError(err instanceof Error ? err : new Error(String(err)));
         setReadings([]);
       } finally {
         setLoading(false);
       }
     }, (firestoreError) => {
-      console.error("Firestore onSnapshot error:", firestoreError);
-      setError(firestoreError); 
+      console.error("[useAirQualityReadings] Firestore onSnapshot error:", firestoreError);
+      setError(firestoreError);
       setReadings([]);
       setLoading(false);
     });
