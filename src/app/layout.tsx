@@ -1,7 +1,6 @@
 
 'use client'; // RootLayout needs to be a client component for useState and useEffect
 
-import type { Metadata } from 'next';
 import { Inter, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import 'leaflet/dist/leaflet.css';
@@ -21,11 +20,9 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-// Metadata can still be exported from a client component in app router
-export const metadata: Metadata = {
-  title: 'BreatheEasy Mobile',
-  description: 'Monitor and improve your air quality.',
-};
+// Removed metadata export as it's not allowed in 'use client' components.
+// If global metadata is needed, it should be handled in a Server Component,
+// or individual pages can define their own metadata.
 
 export default function RootLayout({
   children,
@@ -65,16 +62,16 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body 
+      <body
         suppressHydrationWarning={true}
         className={cn(
-          inter.variable, 
-          geistMono.variable, 
-          "antialiased font-sans" 
+          inter.variable,
+          geistMono.variable,
+          "antialiased font-sans"
         )}
       >
         {/* Orb Container & Page Background Gradient */}
-        <div 
+        <div
           id="background-effects-container" // Added ID to target for hiding
           className={cn(
             "fixed inset-0 z-0 overflow-hidden",
@@ -82,15 +79,15 @@ export default function RootLayout({
           )}
         >
           {/* Orb 1 - Shine Color */}
-          <div 
-            className="absolute -top-20 -left-20 w-72 h-72 bg-[hsl(50,70%,90%)] rounded-full animate-float filter blur-3xl opacity-70" 
+          <div
+            className="absolute -top-20 -left-20 w-72 h-72 bg-[hsl(50,70%,90%)] rounded-full animate-float filter blur-3xl opacity-70"
           ></div>
           {/* Orb 2 - Shine Color */}
-          <div 
+          <div
             className="absolute -bottom-20 -right-10 w-96 h-96 bg-[hsl(50,70%,90%)] rounded-full animate-float-delayed filter blur-3xl opacity-60"
           ></div>
           {/* Orb 3 - Shine Color */}
-          <div 
+          <div
             className="absolute top-1/3 left-1/3 w-60 h-60 bg-[hsl(50,70%,90%)] rounded-full animate-float filter blur-3xl opacity-50"
           ></div>
         </div>
@@ -98,13 +95,13 @@ export default function RootLayout({
         {/* Main Content Wrapper - sits on top of orbs */}
         <div className={cn(
           "min-h-screen flex flex-col",
-          "bg-transparent", 
-          "relative z-10" 
+          "bg-transparent",
+          "relative z-10"
         )}>
           {/* AppHeader is now rendered here and passed props */}
-          <AppHeader 
-            isHighContrast={isHighContrast} 
-            toggleHighContrast={toggleHighContrast} 
+          <AppHeader
+            isHighContrast={isHighContrast}
+            toggleHighContrast={toggleHighContrast}
           />
           {children}
         </div>
