@@ -38,12 +38,39 @@ const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo: hsl(240, 60%, 60%)
 
 const getCo2ConfigValues = (co2Value: number): { iconClassName: string; strokeColor: string } => {
   if (co2Value > 2000) {
-    return { iconClassName: "text-red-500", strokeColor: "hsl(0, 84.2%, 60.2%)" }; // Destructive Red: hsl(0, 84.2%, 60.2%)
+    return { iconClassName: "text-red-500", strokeColor: "hsl(0, 84.2%, 60.2%)" }; // Destructive Red
   } else if (co2Value > 1000) {
     return { iconClassName: "text-yellow-500", strokeColor: "hsl(45, 100%, 55%)" }; // Yellow
   }
   return { iconClassName: "text-green-500", strokeColor: "hsl(120, 70%, 45%)" }; // Green
 };
+
+const getCO2StatusText = (value: number): string => {
+  if (value > 2000) return "Very High";
+  if (value > 1500) return "High";
+  if (value > 1000) return "Elevated";
+  if (value > 700) return "Acceptable";
+  return "Good";
+};
+
+const getPM25StatusText = (value: number): string => {
+  if (value > 250.5) return "Hazardous";
+  if (value > 150.5) return "Very Unhealthy";
+  if (value > 55.5) return "Unhealthy";
+  if (value > 35.5) return "Unhealthy for Sensitive Groups";
+  if (value > 12.1) return "Moderate";
+  return "Good";
+};
+
+const getPM10StatusText = (value: number): string => {
+  if (value > 425) return "Hazardous";
+  if (value > 355) return "Very Unhealthy";
+  if (value > 255) return "Unhealthy";
+  if (value > 155) return "Unhealthy for Sensitive Groups";
+  if (value > 55) return "Moderate";
+  return "Good";
+};
+
 
 const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
   temperature: {
@@ -71,25 +98,25 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
     unit: "ppm",
     icon: MountainSnow,
     iconClassName: "", // Will be set dynamically
-    description: "Carbon Dioxide Level",
+    description: "Carbon Dioxide Level", // Base description
   },
   pm2_5: {
     title: "PM2.5",
-    maxValue: 100,
+    maxValue: 100, // Max value for gauge, not AQI scale max
     baseStrokeColor: pm25GaugeColor,
     unit: "μg/m³",
     icon: CloudFog,
     iconClassName: "text-indigo-500",
-    description: "Fine Particulate Matter (<2.5μm)",
+    description: "Fine Particulate Matter (<2.5μm)", // Base description
   },
   pm10: {
     title: "PM10",
-    maxValue: 200,
+    maxValue: 200, // Max value for gauge, not AQI scale max
     baseStrokeColor: pm10GaugeColor,
     unit: "μg/m³",
     icon: Cloudy,
     iconClassName: "text-slate-500",
-    description: "Coarse Particulate Matter (<10μm)",
+    description: "Coarse Particulate Matter (<10μm)", // Base description
   },
 };
 
@@ -109,21 +136,19 @@ export function HomePageClient() {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [activeDialKey, setActiveDialKey] = useState<keyof typeof DIAL_CONFIGS>('temperature');
 
-  // Determine the latest reading: prioritize RTDB, then Firestore, then null
   const latestReading = rtdbReading ?? (historicalData && historicalData.length > 0 ? historicalData[0] : null);
   const overallLoading = firestoreLoading || loadingRtdb;
 
 
   useEffect(() => {
-    // Update location based on the determined latestReading
     if (latestReading?.latitude && latestReading?.longitude) {
       setLocation({
         latitude: latestReading.latitude,
         longitude: latestReading.longitude,
       });
-    } else if (!overallLoading && latestReading) { // latestReading exists but no lat/lon
+    } else if (!overallLoading && latestReading) { 
       setLocation(null); 
-    } else if (!overallLoading && !latestReading) { // No data at all
+    } else if (!overallLoading && !latestReading) { 
         setLocation(null);
     }
   }, [latestReading, overallLoading]);
@@ -188,10 +213,10 @@ export function HomePageClient() {
           {(historicalData.length > 0) && (
             <div className="w-full md:flex-1 md:max-w-2xl lg:max-w-4xl mt-6 md:mt-0 flex flex-col gap-6 md:gap-8">
               <HistoricalDataChart
-                  data={historicalData} // Historical charts always use Firestore data
+                  data={historicalData} 
                   dataKey={activeDialKey as keyof AirQualityReading}
                   title={`${activeChartConfig.title} Trend`}
-                  color={currentStrokeColorForMainDial} // Color derived from latest value for consistency
+                  color={currentStrokeColorForMainDial} 
                   unit={activeChartConfig.unit}
               />
             </div>
@@ -204,12 +229,18 @@ export function HomePageClient() {
         {latestReading ? (
           <>
             {Object.entries(DIAL_CONFIGS).map(([key, config]) => {
-                const cardValue = latestReading[key as keyof AirQualityReading] as number;
+                const cardValue = latestReading[key as keyof AirQualityReading] as number ?? 0;
                 let iconClass = config.iconClassName;
+                let cardDescription = config.description;
 
                 if (key === 'co2') {
                   const co2Vals = getCo2ConfigValues(cardValue);
                   iconClass = co2Vals.iconClassName;
+                  cardDescription = `${config.description} - Level: ${getCO2StatusText(cardValue)}`;
+                } else if (key === 'pm2_5') {
+                  cardDescription = `${config.description} - Level: ${getPM25StatusText(cardValue)}`;
+                } else if (key === 'pm10') {
+                  cardDescription = `${config.description} - Level: ${getPM10StatusText(cardValue)}`;
                 }
 
                 return (
@@ -220,7 +251,7 @@ export function HomePageClient() {
                       unit={config.unit}
                       icon={config.icon}
                       iconClassName={iconClass}
-                      description={config.description}
+                      description={cardDescription} // Use potentially augmented description
                       onClick={() => setActiveDialKey(key as keyof typeof DIAL_CONFIGS)}
                     />
                   </div>
@@ -248,7 +279,6 @@ export function HomePageClient() {
 
                 let colorForChart: string;
                 const colorMapEntry = chartColorMapping[key];
-                // Use latestReading for CO2 color calculation, even for historical charts, to keep color consistent if it's dynamic
                 const valueForColor = latestReading?.[key as keyof AirQualityReading] as number ?? 0;
 
                 if (typeof colorMapEntry === 'function') {
@@ -260,7 +290,7 @@ export function HomePageClient() {
                 return (
                   <HistoricalDataChart
                     key={key}
-                    data={historicalData} // Historical charts always use Firestore data
+                    data={historicalData} 
                     dataKey={key as keyof AirQualityReading}
                     title={`${config.title} Trend`}
                     color={colorForChart}
@@ -277,7 +307,7 @@ export function HomePageClient() {
       <section className="my-6 md:my-8 flex justify-center">
         <div className="w-full max-w-lg">
           <PersonalizedTips
-            latestReading={latestReading} // Uses the combined latest reading
+            latestReading={latestReading} 
             derivedLocation={location}
           />
         </div>
