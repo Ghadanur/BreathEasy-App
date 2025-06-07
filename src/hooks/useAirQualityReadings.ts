@@ -33,8 +33,11 @@ function parseFirestoreTimestampToISO(firestoreTimestamp: FirestoreTimestampStri
 
 // Parses a Firestore document (structured according to ESP32's uploadToFirestore) into AirQualityReading
 function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): AirQualityReading | null {
-  const documentData = doc.data() as RawFirestoreReading;
+  const documentData = doc.data() as RawFirestoreReading; // Cast to the expected raw structure
   const docId = doc.id;
+
+  console.log(`[parseFirestoreDocToReading] Attempting to parse document ID: ${docId}. Raw document data:`, JSON.parse(JSON.stringify(documentData)));
+
 
   if (!documentData) {
     console.warn(`[parseFirestoreDocToReading] Document ID: ${docId} - No data found in document snapshot.`);
@@ -45,9 +48,12 @@ function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): A
   const rawDataFields = documentData.fields;
 
   if (typeof rawDataFields !== 'object' || rawDataFields === null) {
-    console.warn(`[parseFirestoreDocToReading] Document ID: ${docId} - 'fields' property is missing, not an object, or null. Document data:`, JSON.stringify(documentData));
+    console.warn(`[parseFirestoreDocToReading] Document ID: ${docId} - 'fields' property is missing, not an object, or null. Document data:`, JSON.parse(JSON.stringify(documentData)));
     return null;
   }
+  
+  console.log(`[parseFirestoreDocToReading] Document ID: ${docId} - Found 'fields' object:`, JSON.parse(JSON.stringify(rawDataFields)));
+
 
   // Extract values using optional chaining and check types
   const tempValue = rawDataFields.temp?.doubleValue;
@@ -97,9 +103,11 @@ function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): A
   if (isoTimestamp === null) validationIssues.push(`timestampString ('${timestampString}') failed to parse or was missing (raw: ${JSON.stringify(rawDataFields.timestamp)}).`);
 
   if (validationIssues.length > 0) {
-    console.warn(`[parseFirestoreDocToReading] Document ID: ${docId} - Incomplete or malformed data. Issues: ${validationIssues.join('; ')}. Raw 'fields' data:`, JSON.stringify(rawDataFields));
+    console.warn(`[parseFirestoreDocToReading] Document ID: ${docId} - Incomplete or malformed data. Issues: ${validationIssues.join('; ')}. Raw 'fields' data:`, JSON.parse(JSON.stringify(rawDataFields)));
     return null;
   }
+  
+  console.log(`[parseFirestoreDocToReading] Successfully parsed document ID: ${docId}`);
 
   return {
     id: docId,
@@ -123,35 +131,40 @@ export function useAirQualityReadings(count: number = 96) {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    console.log(`[useAirQualityReadings] Hook activated. Fetching last ${count} readings.`);
+    
     const readingsColRef = collection(firestore, 'readings');
 
     const dataQuery = query(
       readingsColRef,
-      orderBy('fields.timestamp.stringValue', 'desc'),
+      orderBy('fields.timestamp.stringValue', 'desc'), // Order by the string timestamp within fields
       limit(count)
     );
 
-    console.log("[useAirQualityReadings] Subscribing to Firestore 'readings' collection...");
+    console.log("[useAirQualityReadings] Subscribing to Firestore 'readings' collection with query:", dataQuery);
 
     const unsubscribe = onSnapshot(dataQuery, (querySnapshot) => {
+      console.log(`[useAirQualityReadings] Snapshot received. Processing ${querySnapshot.docs.length} document(s).`);
       try {
         if (querySnapshot.empty) {
-          console.warn("[useAirQualityReadings] Firestore query returned an empty snapshot for 'readings' collection. Ensure data is being written by ESP32, security rules allow reads, and the collection name is correct.");
+          console.warn("[useAirQualityReadings] Firestore query returned an empty snapshot for 'readings' collection. Ensure data is being written by ESP32 to this collection, security rules allow reads, and the collection name is correct.");
           setReadings([]);
         } else {
-          console.log(`[useAirQualityReadings] Received ${querySnapshot.docs.length} document(s) from Firestore.`);
+          console.log(`[useAirQualityReadings] Received ${querySnapshot.docs.length} document(s) from Firestore. Attempting to parse...`);
+          
           const parsedReadings = querySnapshot.docs
             .map(doc => parseFirestoreDocToReading(doc))
             .filter((reading): reading is AirQualityReading => reading !== null);
 
           if (querySnapshot.docs.length > 0 && parsedReadings.length === 0) {
-            console.warn("[useAirQualityReadings] Firestore query returned documents, but ALL failed parsing. Check parsing logic in 'parseFirestoreDocToReading' and data structure in Firestore for 'readings' collection. See previous logs from 'parseFirestoreDocToReading' for details on parsing failures for individual documents.");
+            console.error("[useAirQualityReadings] CRITICAL: Firestore query returned documents, but ALL failed parsing. Check parsing logic in 'parseFirestoreDocToReading' and data structure in Firestore for 'readings' collection. See previous logs from 'parseFirestoreDocToReading' for details on parsing failures for individual documents.");
           } else if (parsedReadings.length < querySnapshot.docs.length) {
             console.warn(`[useAirQualityReadings] Parsed ${parsedReadings.length} valid readings out of ${querySnapshot.docs.length} documents fetched. Some documents may have failed parsing; check warnings from 'parseFirestoreDocToReading'.`);
           } else if (parsedReadings.length > 0) {
             console.log(`[useAirQualityReadings] Successfully parsed ${parsedReadings.length} historical readings from Firestore.`);
           }
           setReadings(parsedReadings);
+          console.log("[useAirQualityReadings] Final parsed readings state:", parsedReadings);
         }
         setError(null);
       } catch (err: any) {
@@ -160,19 +173,23 @@ export function useAirQualityReadings(count: number = 96) {
         setReadings([]);
       } finally {
         setLoading(false);
+        console.log("[useAirQualityReadings] Loading state set to false.");
       }
     }, (firestoreError) => {
       console.error("[useAirQualityReadings] Firestore onSnapshot error. This often indicates a permissions issue (check security rules), network problem, or incorrect Firestore setup (e.g., project ID). Error details:", firestoreError);
       setError(firestoreError);
       setReadings([]); 
       setLoading(false);
+      console.log("[useAirQualityReadings] Loading state set to false due to onSnapshot error.");
     });
 
+    // Cleanup function
     return () => {
       console.log("[useAirQualityReadings] Unsubscribing from Firestore 'readings' collection.");
       unsubscribe();
     };
-  }, [count]);
+  }, [count]); // Re-run effect if count changes
 
   return { readings, loading, error };
 }
+    
