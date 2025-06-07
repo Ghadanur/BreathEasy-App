@@ -33,7 +33,7 @@ function parseFirestoreTimestampToISO(firestoreTimestamp: FirestoreTimestampStri
 
 // Parses a Firestore document (structured according to ESP32's uploadToFirestore) into AirQualityReading
 function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): AirQualityReading | null {
-  const documentData = doc.data() as RawFirestoreReading; // Cast the raw doc data
+  const documentData = doc.data() as RawFirestoreReading;
   const docId = doc.id;
 
   if (!documentData) {
@@ -61,22 +61,38 @@ function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): A
 
   const isoTimestamp = parseFirestoreTimestampToISO(timestampString);
 
-  // Stricter validation log
   const validationIssues: string[] = [];
   if (typeof tempValue !== 'number') validationIssues.push(`tempValue (raw: ${JSON.stringify(rawDataFields.temp)}) is not a number.`);
+  else if (isNaN(tempValue)) validationIssues.push(`tempValue (raw: ${JSON.stringify(rawDataFields.temp)}) is NaN.`);
+
   if (typeof humidityValue !== 'number') validationIssues.push(`humidityValue (raw: ${JSON.stringify(rawDataFields.humidity)}) is not a number.`);
-  if (typeof co2Value !== 'number') validationIssues.push(`co2Value (raw: ${JSON.stringify(rawDataFields.co2)}) is not a number.`);
-  if (typeof pm25Value !== 'number') validationIssues.push(`pm25Value (raw: ${JSON.stringify(rawDataFields.pm25)}) is not a number.`);
-  if (typeof pm10Value !== 'number') validationIssues.push(`pm10Value (raw: ${JSON.stringify(rawDataFields.pm10)}) is not a number.`);
+  else if (isNaN(humidityValue)) validationIssues.push(`humidityValue (raw: ${JSON.stringify(rawDataFields.humidity)}) is NaN.`);
   
-  // Latitude and longitude are optional in AirQualityReading, but if location object exists, they should be numbers
+  if (typeof co2Value !== 'number') validationIssues.push(`co2Value (raw: ${JSON.stringify(rawDataFields.co2)}) is not a number.`);
+  else if (isNaN(co2Value)) validationIssues.push(`co2Value (raw: ${JSON.stringify(rawDataFields.co2)}) is NaN.`);
+
+  if (typeof pm25Value !== 'number') validationIssues.push(`pm25Value (raw: ${JSON.stringify(rawDataFields.pm25)}) is not a number.`);
+  else if (isNaN(pm25Value)) validationIssues.push(`pm25Value (raw: ${JSON.stringify(rawDataFields.pm25)}) is NaN.`);
+
+  if (typeof pm10Value !== 'number') validationIssues.push(`pm10Value (raw: ${JSON.stringify(rawDataFields.pm10)}) is not a number.`);
+  else if (isNaN(pm10Value)) validationIssues.push(`pm10Value (raw: ${JSON.stringify(rawDataFields.pm10)}) is NaN.`);
+  
+  // Latitude and longitude are optional in AirQualityReading
+  // If location object and its sub-fields exist, then lat/lon should be numbers or undefined (if keys are missing)
   if (rawDataFields.location?.mapValue?.fields) {
-    if (typeof latValue !== 'number' && latValue !== undefined) validationIssues.push(`latValue (raw: ${JSON.stringify(rawDataFields.location.mapValue.fields.latitude)}) is not a number when location object exists.`);
-    if (typeof lonValue !== 'number' && lonValue !== undefined) validationIssues.push(`lonValue (raw: ${JSON.stringify(rawDataFields.location.mapValue.fields.longitude)}) is not a number when location object exists.`);
-  } else if (rawDataFields.location !== undefined) { // location object itself exists but maybe not mapValue or fields
+    if (latValue !== undefined && typeof latValue !== 'number') {
+        validationIssues.push(`latValue (raw: ${JSON.stringify(rawDataFields.location.mapValue.fields.latitude)}) is present but not a number.`);
+    } else if (latValue !== undefined && isNaN(latValue)) {
+        validationIssues.push(`latValue (raw: ${JSON.stringify(rawDataFields.location.mapValue.fields.latitude)}) is NaN.`);
+    }
+    if (lonValue !== undefined && typeof lonValue !== 'number') {
+        validationIssues.push(`lonValue (raw: ${JSON.stringify(rawDataFields.location.mapValue.fields.longitude)}) is present but not a number.`);
+    } else if (lonValue !== undefined && isNaN(lonValue)) {
+        validationIssues.push(`lonValue (raw: ${JSON.stringify(rawDataFields.location.mapValue.fields.longitude)}) is NaN.`);
+    }
+  } else if (rawDataFields.location !== undefined) { 
      validationIssues.push(`location object exists but is malformed (raw: ${JSON.stringify(rawDataFields.location)}).`);
   }
-
 
   if (isoTimestamp === null) validationIssues.push(`timestampString ('${timestampString}') failed to parse or was missing (raw: ${JSON.stringify(rawDataFields.timestamp)}).`);
 
@@ -87,20 +103,19 @@ function parseFirestoreDocToReading(doc: QueryDocumentSnapshot<DocumentData>): A
 
   return {
     id: docId,
-    timestamp: isoTimestamp!, // Not null here due to validation
+    timestamp: isoTimestamp!, 
     temperature: tempValue!,
     humidity: humidityValue!,
     co2: co2Value!,
     pm2_5: pm25Value!,
     pm10: pm10Value!,
-    // Latitude and longitude can be undefined if not present or if the full path doesn't resolve
-    latitude: typeof latValue === 'number' ? latValue : undefined,
-    longitude: typeof lonValue === 'number' ? lonValue : undefined,
+    latitude: (typeof latValue === 'number' && !isNaN(latValue)) ? latValue : undefined,
+    longitude: (typeof lonValue === 'number' && !isNaN(lonValue)) ? lonValue : undefined,
   };
 }
 
 
-export function useAirQualityReadings(count: number = 96) { // Default count for historical data
+export function useAirQualityReadings(count: number = 96) { 
   const [readings, setReadings] = useState<AirQualityReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -108,29 +123,31 @@ export function useAirQualityReadings(count: number = 96) { // Default count for
   useEffect(() => {
     setLoading(true);
     setError(null);
-    const readingsColRef = collection(firestore, 'readings'); // Collection name from ESP32 code
+    const readingsColRef = collection(firestore, 'readings');
 
-    // Query ordered by the string timestamp within the 'fields' object
     const dataQuery = query(
       readingsColRef,
       orderBy('fields.timestamp.stringValue', 'desc'),
       limit(count)
     );
 
+    console.log("[useAirQualityReadings] Subscribing to Firestore 'readings' collection...");
+
     const unsubscribe = onSnapshot(dataQuery, (querySnapshot) => {
       try {
         if (querySnapshot.empty) {
-          console.log("[useAirQualityReadings] Firestore query returned an empty snapshot for 'readings' collection. Ensure data is being written by ESP32, security rules allow reads, and the collection name is correct.");
-          setReadings([]); // Ensure readings are cleared if snapshot is empty
+          console.warn("[useAirQualityReadings] Firestore query returned an empty snapshot for 'readings' collection. Ensure data is being written by ESP32, security rules allow reads, and the collection name is correct.");
+          setReadings([]);
         } else {
-            const parsedReadings = querySnapshot.docs
+          console.log(`[useAirQualityReadings] Received ${querySnapshot.docs.length} document(s) from Firestore.`);
+          const parsedReadings = querySnapshot.docs
             .map(doc => parseFirestoreDocToReading(doc))
             .filter((reading): reading is AirQualityReading => reading !== null);
 
           if (querySnapshot.docs.length > 0 && parsedReadings.length === 0) {
             console.warn("[useAirQualityReadings] Firestore query returned documents, but ALL failed parsing. Check parsing logic in 'parseFirestoreDocToReading' and data structure in Firestore for 'readings' collection. See previous logs from 'parseFirestoreDocToReading' for details on parsing failures for individual documents.");
           } else if (parsedReadings.length < querySnapshot.docs.length) {
-            console.log(`[useAirQualityReadings] Parsed ${parsedReadings.length} valid readings out of ${querySnapshot.docs.length} documents fetched. Some documents may have failed parsing; check warnings from 'parseFirestoreDocToReading'.`);
+            console.warn(`[useAirQualityReadings] Parsed ${parsedReadings.length} valid readings out of ${querySnapshot.docs.length} documents fetched. Some documents may have failed parsing; check warnings from 'parseFirestoreDocToReading'.`);
           } else if (parsedReadings.length > 0) {
             console.log(`[useAirQualityReadings] Successfully parsed ${parsedReadings.length} historical readings from Firestore.`);
           }
@@ -140,18 +157,21 @@ export function useAirQualityReadings(count: number = 96) { // Default count for
       } catch (err: any) {
         console.error("[useAirQualityReadings] Error processing Firestore data snapshot:", err);
         setError(err instanceof Error ? err : new Error(String(err)));
-        setReadings([]); // Clear readings on error
+        setReadings([]);
       } finally {
         setLoading(false);
       }
     }, (firestoreError) => {
-      console.error("[useAirQualityReadings] Firestore onSnapshot error. This often indicates a permissions issue (check security rules), network problem, or incorrect Firestore setup (e.g., project ID).", firestoreError);
+      console.error("[useAirQualityReadings] Firestore onSnapshot error. This often indicates a permissions issue (check security rules), network problem, or incorrect Firestore setup (e.g., project ID). Error details:", firestoreError);
       setError(firestoreError);
-      setReadings([]); // Clear readings on error
+      setReadings([]); 
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log("[useAirQualityReadings] Unsubscribing from Firestore 'readings' collection.");
+      unsubscribe();
+    };
   }, [count]);
 
   return { readings, loading, error };
