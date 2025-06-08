@@ -37,38 +37,41 @@ const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo: hsl(240, 60%, 60%)
 
 
 const getCo2ConfigValues = (co2Value: number): { iconClassName: string; strokeColor: string } => {
-  if (co2Value > 2000) {
+  // Color logic can be adjusted based on new CO2 levels if desired,
+  // for now, keeping the existing color logic.
+  if (co2Value > 2000) { // Corresponds to Unhealthy or Hazardous
     return { iconClassName: "text-red-500", strokeColor: "hsl(0, 84.2%, 60.2%)" }; // Destructive Red
-  } else if (co2Value > 1000) {
+  } else if (co2Value > 1000) { // Corresponds to Poor air quality
     return { iconClassName: "text-yellow-500", strokeColor: "hsl(45, 100%, 55%)" }; // Yellow
   }
+  // Covers Fresh/Normal and Acceptable Indoor
   return { iconClassName: "text-green-500", strokeColor: "hsl(120, 70%, 45%)" }; // Green
 };
 
 const getCO2StatusText = (value: number): string => {
-  if (value > 2000) return "Very High";
-  if (value > 1500) return "High";
-  if (value > 1000) return "Elevated";
-  if (value > 700) return "Acceptable";
-  return "Good";
+  if (value > 5000) return "Hazardous";
+  if (value > 2000) return "Unhealthy"; // 2001-5000 ppm
+  if (value > 1000) return "Poor air quality"; // 1001-2000 ppm
+  if (value > 450) return "Acceptable indoor"; // 451-1000 ppm
+  return "Fresh / Normal Outdoor"; // 0-450 ppm
 };
 
 const getPM25StatusText = (value: number): string => {
-  if (value > 250.5) return "Hazardous";
-  if (value > 150.5) return "Very Unhealthy";
-  if (value > 55.5) return "Unhealthy";
-  if (value > 35.5) return "Unhealthy for Sensitive Groups";
-  if (value > 12.1) return "Moderate";
-  return "Good";
+  if (value >= 250.5) return "Hazardous";
+  if (value >= 150.5) return "Very Unhealthy"; // 150.5 – 250.4
+  if (value >= 55.5) return "Unhealthy"; // 55.5 – 150.4
+  if (value >= 35.5) return "Unhealthy for Sensitive Groups"; // 35.5 – 55.4
+  if (value >= 12.1) return "Moderate"; // 12.1 – 35.4
+  return "Good"; // 0 – 12.0
 };
 
 const getPM10StatusText = (value: number): string => {
-  if (value > 425) return "Hazardous";
-  if (value > 355) return "Very Unhealthy";
-  if (value > 255) return "Unhealthy";
-  if (value > 155) return "Unhealthy for Sensitive Groups";
-  if (value > 55) return "Moderate";
-  return "Good";
+  if (value >= 425) return "Hazardous";
+  if (value >= 355) return "Very Unhealthy"; // 355 – 424
+  if (value >= 255) return "Unhealthy"; // 255 – 354
+  if (value >= 155) return "Unhealthy for Sensitive Groups"; // 155 – 254
+  if (value >= 55) return "Moderate"; // 55 – 154
+  return "Good"; // 0 – 54
 };
 
 
@@ -93,12 +96,12 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
   },
   co2: {
     title: "CO₂",
-    maxValue: 3000,
+    maxValue: 3000, // Gauge max value, can be different from status thresholds
     baseStrokeColor: (value: number) => getCo2ConfigValues(value).strokeColor,
     unit: "ppm",
     icon: MountainSnow,
     iconClassName: "", // Will be set dynamically
-    description: "Carbon Dioxide Level", // Base description
+    description: "Carbon Dioxide Level",
   },
   pm2_5: {
     title: "PM2.5",
@@ -107,7 +110,7 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
     unit: "μg/m³",
     icon: CloudFog,
     iconClassName: "text-indigo-500",
-    description: "Fine Particulate Matter (<2.5μm)", // Base description
+    description: "Fine Particulate Matter (<2.5μm)",
   },
   pm10: {
     title: "PM10",
@@ -116,7 +119,7 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
     unit: "μg/m³",
     icon: Cloudy,
     iconClassName: "text-slate-500",
-    description: "Coarse Particulate Matter (<10μm)", // Base description
+    description: "Coarse Particulate Matter (<10μm)",
   },
 };
 
@@ -146,9 +149,9 @@ export function HomePageClient() {
         latitude: latestReading.latitude,
         longitude: latestReading.longitude,
       });
-    } else if (!overallLoading && latestReading) { 
-      setLocation(null); 
-    } else if (!overallLoading && !latestReading) { 
+    } else if (!overallLoading && latestReading) {
+      setLocation(null);
+    } else if (!overallLoading && !latestReading) {
         setLocation(null);
     }
   }, [latestReading, overallLoading]);
@@ -213,10 +216,10 @@ export function HomePageClient() {
           {(historicalData.length > 0) && (
             <div className="w-full md:flex-1 md:max-w-2xl lg:max-w-4xl mt-6 md:mt-0 flex flex-col gap-6 md:gap-8">
               <HistoricalDataChart
-                  data={historicalData} 
+                  data={historicalData}
                   dataKey={activeDialKey as keyof AirQualityReading}
                   title={`${activeChartConfig.title} Trend`}
-                  color={currentStrokeColorForMainDial} 
+                  color={currentStrokeColorForMainDial}
                   unit={activeChartConfig.unit}
               />
             </div>
@@ -251,7 +254,7 @@ export function HomePageClient() {
                       unit={config.unit}
                       icon={config.icon}
                       iconClassName={iconClass}
-                      description={cardDescription} // Use potentially augmented description
+                      description={cardDescription}
                       onClick={() => setActiveDialKey(key as keyof typeof DIAL_CONFIGS)}
                     />
                   </div>
@@ -290,7 +293,7 @@ export function HomePageClient() {
                 return (
                   <HistoricalDataChart
                     key={key}
-                    data={historicalData} 
+                    data={historicalData}
                     dataKey={key as keyof AirQualityReading}
                     title={`${config.title} Trend`}
                     color={colorForChart}
@@ -307,7 +310,7 @@ export function HomePageClient() {
       <section className="my-6 md:my-8 flex justify-center">
         <div className="w-full max-w-lg">
           <PersonalizedTips
-            latestReading={latestReading} 
+            latestReading={latestReading}
             derivedLocation={location}
           />
         </div>
