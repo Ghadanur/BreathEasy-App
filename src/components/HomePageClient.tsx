@@ -49,29 +49,29 @@ const getCo2ConfigValues = (co2Value: number): { iconClassName: string; strokeCo
 };
 
 const getCO2StatusText = (value: number): string => {
-  if (value > 5000) return "Hazardous"; // >5,000 ppm
-  if (value > 2000) return "Unhealthy"; // 2,001–5,000 ppm
-  if (value > 1000) return "Poor air quality"; // 1,001–2,000 ppm
-  if (value > 450) return "Acceptable indoor"; // 451–1,000 ppm
-  return "Fresh / Normal Outdoor"; // 0–450 ppm
+  if (value > 5000) return "Hazardous";
+  if (value > 2000) return "Unhealthy";
+  if (value > 1000) return "Poor air quality";
+  if (value > 450) return "Acceptable indoor";
+  return "Fresh / Normal Outdoor";
 };
 
 const getPM25StatusText = (value: number): string => {
-  if (value >= 250.5) return "Hazardous"; // >250.5 µg/m³
-  if (value >= 150.5) return "Very Unhealthy"; // 150.5 – 250.4 µg/m³
-  if (value >= 55.5) return "Unhealthy"; // 55.5 – 150.4 µg/m³
-  if (value >= 35.5) return "Unhealthy for Sensitive Groups"; // 35.5 – 55.4 µg/m³
-  if (value >= 12.1) return "Moderate"; // 12.1 – 35.4 µg/m³
-  return "Good"; // 0 – 12.0 µg/m³
+  if (value >= 250.5) return "Hazardous";
+  if (value >= 150.5) return "Very Unhealthy";
+  if (value >= 55.5) return "Unhealthy";
+  if (value >= 35.5) return "Unhealthy for Sensitive Groups";
+  if (value >= 12.1) return "Moderate";
+  return "Good";
 };
 
 const getPM10StatusText = (value: number): string => {
-  if (value >= 425) return "Hazardous"; // >425 µg/m³
-  if (value >= 355) return "Very Unhealthy"; // 355 – 424 µg/m³
-  if (value >= 255) return "Unhealthy"; // 255 – 354 µg/m³
-  if (value >= 155) return "Unhealthy for Sensitive Groups"; // 155 – 254 µg/m³
-  if (value >= 55) return "Moderate"; // 55 – 154 µg/m³
-  return "Good"; // 0 – 54 µg/m³
+  if (value >= 425) return "Hazardous";
+  if (value >= 355) return "Very Unhealthy";
+  if (value >= 255) return "Unhealthy";
+  if (value >= 155) return "Unhealthy for Sensitive Groups";
+  if (value >= 55) return "Moderate";
+  return "Good";
 };
 
 
@@ -101,7 +101,7 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
     unit: "ppm",
     icon: MountainSnow,
     iconClassName: "", // Will be set dynamically
-    description: "Carbon Dioxide Concentration",
+    description: "CO2 Concentration",
   },
   pm2_5: {
     title: "PM2.5",
@@ -323,5 +323,7 @@ export function HomePageClient() {
     </div>
   );
 }
+
+    
 
     
