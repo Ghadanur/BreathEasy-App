@@ -37,41 +37,38 @@ const pm10GaugeColor = "hsl(240, 60%, 60%)"; // Indigo: hsl(240, 60%, 60%)
 
 
 const getCo2ConfigValues = (co2Value: number): { iconClassName: string; strokeColor: string } => {
-  // Color logic can be adjusted based on new CO2 levels if desired,
-  // for now, keeping the existing color logic.
-  if (co2Value > 2000) { // Corresponds to Unhealthy or Hazardous
+  if (co2Value > 2000) {
     return { iconClassName: "text-red-500", strokeColor: "hsl(0, 84.2%, 60.2%)" }; // Destructive Red
-  } else if (co2Value > 1000) { // Corresponds to Poor air quality
+  } else if (co2Value > 1000) {
     return { iconClassName: "text-yellow-500", strokeColor: "hsl(45, 100%, 55%)" }; // Yellow
   }
-  // Covers Fresh/Normal and Acceptable Indoor
   return { iconClassName: "text-green-500", strokeColor: "hsl(120, 70%, 45%)" }; // Green
 };
 
 const getCO2StatusText = (value: number): string => {
   if (value > 5000) return "Hazardous";
-  if (value > 2000) return "Unhealthy";
-  if (value > 1000) return "Poor air quality";
-  if (value > 450) return "Acceptable indoor";
-  return "Fresh / Normal Outdoor";
+  if (value > 2000 && value <= 5000) return "Unhealthy";
+  if (value > 1000 && value <= 2000) return "Poor air quality";
+  if (value > 450 && value <= 1000) return "Acceptable indoor";
+  return "Fresh / Normal Outdoor"; // 0-450 ppm
 };
 
 const getPM25StatusText = (value: number): string => {
   if (value >= 250.5) return "Hazardous";
-  if (value >= 150.5) return "Very Unhealthy";
-  if (value >= 55.5) return "Unhealthy";
-  if (value >= 35.5) return "Unhealthy for Sensitive Groups";
-  if (value >= 12.1) return "Moderate";
-  return "Good";
+  if (value >= 150.5 && value < 250.5) return "Very Unhealthy";
+  if (value >= 55.5 && value < 150.5) return "Unhealthy";
+  if (value >= 35.5 && value < 55.5) return "Unhealthy for Sensitive Groups";
+  if (value >= 12.1 && value < 35.5) return "Moderate";
+  return "Good"; // 0-12.0
 };
 
 const getPM10StatusText = (value: number): string => {
   if (value >= 425) return "Hazardous";
-  if (value >= 355) return "Very Unhealthy";
-  if (value >= 255) return "Unhealthy";
-  if (value >= 155) return "Unhealthy for Sensitive Groups";
-  if (value >= 55) return "Moderate";
-  return "Good";
+  if (value >= 355 && value < 425) return "Very Unhealthy";
+  if (value >= 255 && value < 355) return "Unhealthy";
+  if (value >= 155 && value < 255) return "Unhealthy for Sensitive Groups";
+  if (value >= 55 && value < 155) return "Moderate";
+  return "Good"; // 0-54
 };
 
 
@@ -96,16 +93,16 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
   },
   co2: {
     title: "CO₂",
-    maxValue: 3000, // Gauge max value, can be different from status thresholds
+    maxValue: 3000, 
     baseStrokeColor: (value: number) => getCo2ConfigValues(value).strokeColor,
     unit: "ppm",
     icon: MountainSnow,
-    iconClassName: "", // Will be set dynamically
+    iconClassName: "", 
     description: "CO2 Concentration",
   },
   pm2_5: {
     title: "PM2.5",
-    maxValue: 100, // Max value for gauge, not AQI scale max
+    maxValue: 100, 
     baseStrokeColor: pm25GaugeColor,
     unit: "μg/m³",
     icon: CloudFog,
@@ -114,7 +111,7 @@ const DIAL_CONFIGS: Record<string, Omit<DialConfig, 'key'>> = {
   },
   pm10: {
     title: "PM10",
-    maxValue: 200, // Max value for gauge, not AQI scale max
+    maxValue: 200, 
     baseStrokeColor: pm10GaugeColor,
     unit: "μg/m³",
     icon: Cloudy,
@@ -194,7 +191,7 @@ export function HomePageClient() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-black [.high-contrast_&]:from-foreground to-primary bg-clip-text text-transparent font-sans">
+        <h1 className="text-3xl font-bold tracking-tight font-sans bg-gradient-to-r from-black to-primary bg-clip-text text-transparent [.high-contrast_&]:bg-none [.high-contrast_&]:text-foreground">
           Air Quality Dashboard
         </h1>
       </div>
@@ -323,7 +320,3 @@ export function HomePageClient() {
     </div>
   );
 }
-
-    
-
-    
